@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -31,31 +32,40 @@ import {
   Search,
   MessageSquare,
   FileEdit,
-  Calendar,
+  Calendar as CalendarIcon,
   User,
   ChevronRight,
   Filter,
   Eye,
   Loader2,
   AlertTriangle,
-  FileText
+  FileText,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import ConfidenceBadge from "@/components/ui/ConfidenceBadge";
 import PolicyFlag from "@/components/ui/PolicyFlag";
 import CitationCard from "@/components/ui/CitationCard";
+import DateRangeFilter from "@/components/search/DateRangeFilter";
 import ReactMarkdown from "react-markdown";
 
 export default function AuditLog() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMode, setFilterMode] = useState("all");
   const [filterConfidence, setFilterConfidence] = useState("all");
+  const [filterUser, setFilterUser] = useState("all");
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["aiEvents"],
     queryFn: () => base44.entities.AIEvent.list("-created_date", 100),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list(),
   });
 
   const filteredEvents = events.filter((event) => {
@@ -65,7 +75,19 @@ export default function AuditLog() {
       event.user_email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesMode = filterMode === "all" || event.mode === filterMode;
     const matchesConfidence = filterConfidence === "all" || event.confidence === filterConfidence;
-    return matchesSearch && matchesMode && matchesConfidence;
+    const matchesUser = filterUser === "all" || event.user_email === filterUser;
+    
+    const matchesDateRange = !dateRange.from || (
+      event.created_date && isWithinInterval(
+        new Date(event.created_date),
+        {
+          start: startOfDay(dateRange.from),
+          end: dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from)
+        }
+      )
+    );
+    
+    return matchesSearch && matchesMode && matchesConfidence && matchesUser && matchesDateRange;
   });
 
   const modeIcons = {
@@ -96,17 +118,24 @@ export default function AuditLog() {
 
       {/* Filters */}
       <Card className="bg-white border-0 shadow-sm mb-6">
-        <div className="p-4 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Search by prompt, output, or user..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+        <div className="p-4 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                placeholder="Search by prompt, output, or user..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <DateRangeFilter 
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
             />
           </div>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-3 flex-wrap">
             <Select value={filterMode} onValueChange={setFilterMode}>
               <SelectTrigger className="w-32">
                 <SelectValue placeholder="Mode" />
@@ -117,6 +146,7 @@ export default function AuditLog() {
                 <SelectItem value="draft">Draft</SelectItem>
               </SelectContent>
             </Select>
+            
             <Select value={filterConfidence} onValueChange={setFilterConfidence}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Confidence" />
@@ -128,7 +158,48 @@ export default function AuditLog() {
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="User" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                {users.map((u) => (
+                  <SelectItem key={u.id} value={u.email}>
+                    {u.full_name || u.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(filterMode !== "all" || filterConfidence !== "all" || filterUser !== "all" || dateRange.from) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterMode("all");
+                  setFilterConfidence("all");
+                  setFilterUser("all");
+                  setDateRange({ from: null, to: null });
+                }}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear Filters
+              </Button>
+            )}
           </div>
+
+          {/* Active Filters Summary */}
+          {filteredEvents.length !== events.length && (
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <Filter className="w-3 h-3" />
+              <span>
+                Showing {filteredEvents.length} of {events.length} events
+              </span>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -204,7 +275,7 @@ export default function AuditLog() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-slate-500">
-                        <Calendar className="w-3 h-3" />
+                        <CalendarIcon className="w-3 h-3" />
                         {format(new Date(event.created_date), "MMM d, HH:mm")}
                       </div>
                     </TableCell>

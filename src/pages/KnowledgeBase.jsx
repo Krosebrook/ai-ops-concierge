@@ -43,11 +43,13 @@ import {
   User,
   CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import TagBadge from "@/components/ui/TagBadge";
+import SemanticSearch from "@/components/search/SemanticSearch";
 import { toast } from "sonner";
 
 const DOMAIN_TAGS = ["Support", "Ops", "Sales", "Compliance"];
@@ -58,6 +60,8 @@ export default function KnowledgeBase() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showQADialog, setShowQADialog] = useState(false);
+  const [showSemanticSearch, setShowSemanticSearch] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [user, setUser] = useState(null);
 
   const queryClient = useQueryClient();
@@ -129,38 +133,66 @@ export default function KnowledgeBase() {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search documents and Q&As..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Search documents and Q&As..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setShowSemanticSearch(!showSemanticSearch)}
+            className={cn(
+              "gap-2",
+              showSemanticSearch && "bg-violet-50 text-violet-700 border-violet-300"
+            )}
+          >
+            <Sparkles className="w-4 h-4" />
+            Semantic Search
+          </Button>
         </div>
-        <div className="flex items-center gap-2">
-          {DOMAIN_TAGS.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => {
-                setSelectedTags(prev => 
-                  prev.includes(tag) 
-                    ? prev.filter(t => t !== tag) 
-                    : [...prev, tag]
-                );
+
+        {showSemanticSearch && (
+          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+            <SemanticSearch 
+              onResultClick={(item) => {
+                setSelectedItem(item);
+                setActiveTab(item.type === "document" ? "documents" : "qa");
+                toast.info(`Viewing: ${item.title}`);
               }}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
-                selectedTags.includes(tag)
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-              )}
-            >
-              {tag}
-            </button>
-          ))}
-        </div>
+            />
+          </div>
+        )}
+
+        {!showSemanticSearch && (
+          <div className="flex items-center gap-2">
+            {DOMAIN_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => {
+                  setSelectedTags(prev => 
+                    prev.includes(tag) 
+                      ? prev.filter(t => t !== tag) 
+                      : [...prev, tag]
+                  );
+                }}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+                  selectedTags.includes(tag)
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                )}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
