@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { HelpCircle, MessageSquare, Sparkles, Shield } from "lucide-react";
+import { HelpCircle, MessageSquare, Sparkles, Shield, LayoutDashboard, BookOpen, Clock } from "lucide-react";
 import ClientAsk from "@/components/client/ClientAsk";
 import SupportRequestForm from "@/components/client/SupportRequestForm";
+import FAQ from "@/components/client/FAQ";
+import SupportHistory from "@/components/client/SupportHistory";
+import AccountDashboard from "@/components/client/AccountDashboard";
 
 export default function ClientPortal() {
   const [user, setUser] = useState(null);
@@ -68,20 +71,40 @@ export default function ClientPortal() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="ask" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-slate-100 p-1">
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-slate-100 p-1">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
             <TabsTrigger value="ask" className="gap-2">
               <HelpCircle className="w-4 h-4" />
-              Ask a Question
+              <span className="hidden sm:inline">Ask</span>
+            </TabsTrigger>
+            <TabsTrigger value="faq" className="gap-2">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">FAQ</span>
             </TabsTrigger>
             <TabsTrigger value="support" className="gap-2">
               <MessageSquare className="w-4 h-4" />
-              Submit Request
+              <span className="hidden sm:inline">Submit</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2">
+              <Clock className="w-4 h-4" />
+              <span className="hidden sm:inline">History</span>
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="dashboard">
+            <AccountDashboard />
+          </TabsContent>
+
           <TabsContent value="ask">
             <ClientAsk />
+          </TabsContent>
+
+          <TabsContent value="faq">
+            <FAQ />
           </TabsContent>
 
           <TabsContent value="support">
@@ -93,6 +116,10 @@ export default function ClientPortal() {
               </Card>
               <SupportRequestForm />
             </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <SupportHistory />
           </TabsContent>
         </Tabs>
 
