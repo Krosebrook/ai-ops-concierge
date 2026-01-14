@@ -44,7 +44,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Sparkles
+  Sparkles,
+  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -271,11 +272,27 @@ export default function KnowledgeBase() {
 }
 
 function DocumentCard({ document, queryClient }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
   const archiveMutation = useMutation({
     mutationFn: () => base44.entities.Document.update(document.id, { status: "archived" }),
     onSuccess: () => {
       queryClient.invalidateQueries(["documents"]);
       toast.success("Document archived");
+    }
+  });
+
+  const toggleExternalMutation = useMutation({
+    mutationFn: () => base44.entities.Document.update(document.id, { 
+      external_approved: !document.external_approved 
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["documents"]);
+      toast.success(document.external_approved ? "Removed from client portal" : "Approved for client portal");
     }
   });
 
@@ -307,6 +324,12 @@ function DocumentCard({ document, queryClient }) {
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
+              {user?.role === "admin" && (
+                <DropdownMenuItem onClick={() => toggleExternalMutation.mutate()}>
+                  <Globe className="w-4 h-4 mr-2" />
+                  {document.external_approved ? "Remove from Client Portal" : "Approve for Client Portal"}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => archiveMutation.mutate()}>
                 <Archive className="w-4 h-4 mr-2" />
                 Archive

@@ -345,9 +345,14 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-100 text-emerald-800 gap-1">
+                        <Badge className={cn(
+                          "gap-1",
+                          doc.external_approved 
+                            ? "bg-blue-100 text-blue-800" 
+                            : "bg-emerald-100 text-emerald-800"
+                        )}>
                           <Globe className="w-3 h-3" />
-                          Internal
+                          {doc.external_approved ? "Public" : "Internal"}
                         </Badge>
                       </div>
                     </div>
@@ -361,18 +366,36 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="w-5 h-5 text-slate-500" />
-                External Access (Coming Soon)
+                External Client Access
               </CardTitle>
               <CardDescription>
                 Configure which sources are available to external clients
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center">
-                <Lock className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-500">
-                  External access controls will be available after internal MVP validation.
-                </p>
+              <div className="p-6 border border-slate-200 rounded-xl bg-slate-50/50">
+                <div className="flex items-start gap-3 mb-4">
+                  <Lock className="w-5 h-5 text-slate-500 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-800">Client Portal Access</h4>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Documents and Q&As marked as "external approved" will be visible in the client portal.
+                      Clients can only see approved content - internal data is never exposed.
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                    <span className="text-sm text-slate-700">External-approved documents</span>
+                    <Badge variant="secondary">
+                      {documents.filter(d => d.external_approved).length} of {documents.length}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-white rounded-lg">
+                    <span className="text-sm text-slate-700">Client portal page</span>
+                    <Badge className="bg-blue-100 text-blue-800">ClientPortal</Badge>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -30,6 +30,7 @@ const navigation = [
   { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts" },
   { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A" },
   { name: "Audit Log", href: "AuditLog", icon: ClipboardList, description: "Review AI interactions" },
+  { name: "Client Portal", href: "ClientPortal", icon: Sparkles, description: "External client access", external: true },
   { name: "Settings", href: "Settings", icon: Settings, description: "Configure roles & sources" },
 ];
 
@@ -85,36 +86,42 @@ export default function Layout({ children, currentPageName }) {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = currentPageName === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={createPageUrl(item.href)}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                    isActive
-                      ? "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 shadow-sm"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                  )}
-                >
-                  <item.icon className={cn(
-                    "w-5 h-5 transition-colors",
-                    isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
-                  )} />
-                  <div className="flex-1">
-                    <span>{item.name}</span>
-                    {isActive && (
-                      <p className="text-[10px] text-indigo-500/80 font-normal mt-0.5">
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
+            const isActive = currentPageName === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={createPageUrl(item.href)}
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                  isActive
+                    ? "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 shadow-sm"
+                    : item.external
+                    ? "text-blue-600 hover:bg-blue-50"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                )}
+              >
+                <item.icon className={cn(
+                  "w-5 h-5 transition-colors",
+                  isActive 
+                    ? "text-indigo-600" 
+                    : item.external
+                    ? "text-blue-500"
+                    : "text-slate-400 group-hover:text-slate-600"
+                )} />
+                <div className="flex-1">
+                  <span>{item.name}</span>
                   {isActive && (
-                    <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    <p className="text-[10px] text-indigo-500/80 font-normal mt-0.5">
+                      {item.description}
+                    </p>
                   )}
-                </Link>
-              );
+                </div>
+                {isActive && (
+                  <ChevronRight className="w-4 h-4 text-indigo-400" />
+                )}
+              </Link>
+            );
             })}
           </nav>
 
