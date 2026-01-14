@@ -63,16 +63,28 @@ const draftTypes = [
   }
 ];
 
+const audienceOptions = [
+  { value: "technical", label: "Technical", description: "Developers, engineers" },
+  { value: "business", label: "Business", description: "Executives, managers" },
+  { value: "general", label: "General", description: "Non-technical users" },
+  { value: "enterprise", label: "Enterprise", description: "Large customers" },
+  { value: "internal", label: "Internal", description: "Team members" }
+];
+
 export default function Drafts() {
   const [selectedType, setSelectedType] = useState("ticket_reply");
   const [input, setInput] = useState("");
   const [recipientContext, setRecipientContext] = useState("");
   const [tone, setTone] = useState("professional");
+  const [targetAudience, setTargetAudience] = useState("general");
   const [draft, setDraft] = useState(null);
   const [editedDraft, setEditedDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isImproving, setIsImproving] = useState(false);
   const [user, setUser] = useState(null);
   const [flags, setFlags] = useState([]);
+  const [keywords, setKeywords] = useState([]);
+  const [improvements, setImprovements] = useState([]);
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -103,6 +115,14 @@ export default function Drafts() {
       meeting_summary: "Summarize the meeting with clear sections for attendees, discussion points, decisions, and action items."
     };
 
+    const audienceGuidance = {
+      technical: "Use technical terminology, assume familiarity with concepts, be precise and detailed.",
+      business: "Focus on outcomes and ROI, minimize jargon, emphasize business value.",
+      general: "Use simple language, explain concepts clearly, avoid technical terms.",
+      enterprise: "Be formal and comprehensive, highlight service levels and commitments.",
+      internal: "Be direct and efficient, assume shared context, focus on actionable information."
+    };
+
     const prompt = `You are an AI Ops Concierge helping create professional drafts.
 
 COMPANY KNOWLEDGE (for context):
@@ -110,6 +130,7 @@ ${knowledgeContext || "No documents available."}
 
 DRAFT TYPE: ${currentType.name}
 TONE: ${tone}
+TARGET AUDIENCE: ${targetAudience} - ${audienceGuidance[targetAudience]}
 RECIPIENT CONTEXT: ${recipientContext || "Not specified"}
 
 USER INPUT:
@@ -120,14 +141,17 @@ ${typeInstructions[selectedType]}
 
 IMPORTANT RULES:
 - Match the requested tone
+- Tailor language and complexity to the target audience
 - Be professional and clear
 - Do NOT include any placeholder text like [Company Name] - use generic terms if needed
 - Flag any potential issues (PII, secrets, compliance concerns)
+- Generate 3-5 relevant keywords/tags for this draft
 
 Respond in JSON format:
 {
   "draft": "The complete draft text with proper formatting",
   "flags": ["pii_warning", "secrets_detected", "needs_review"] (empty if none),
+  "keywords": ["keyword1", "keyword2", "keyword3"],
   "suggestions": ["Optional improvement suggestion 1", "Optional suggestion 2"]
 }`;
 
@@ -139,6 +163,7 @@ Respond in JSON format:
           properties: {
             draft: { type: "string" },
             flags: { type: "array", items: { type: "string" } },
+            keywords: { type: "array", items: { type: "string" } },
             suggestions: { type: "array", items: { type: "string" } }
           }
         }
@@ -147,6 +172,8 @@ Respond in JSON format:
       setDraft(result);
       setEditedDraft(result.draft);
       setFlags(result.flags || []);
+      setKeywords(result.keywords || []);
+      setImprovements([]);
 
       // Log the AI event
       await base44.entities.AIEvent.create({
@@ -176,6 +203,98 @@ Respond in JSON format:
 
   const saveDraft = () => {
     toast.success("Draft saved successfully");
+  };
+
+  const handleImprove = async () => {
+    if (!editedDraft.trim()) return;
+    
+    setIsImproving(true);
+    
+    const prompt = `You are an expert editor helping improve a draft.
+
+ORIGINAL DRAFT:
+${editedDraft}
+
+CONTEXT:
+- Type: ${currentType?.name}
+- Tone: ${tone}
+- Audience: ${targetAudience}
+
+Analyze this draft and provide specific, actionable improvements focusing on:
+1. Clarity - Is the message clear and easy to understand?
+2. Conciseness - Can it be more concise without losing meaning?
+3. Tone consistency - Does it maintain the requested tone throughout?
+4. Audience fit - Is the language and complexity appropriate for the audience?
+5. Structure - Is the information well-organized?
+
+For each issue found, provide:
+- What's wrong
+- Why it matters
+- Specific suggestion to fix it
+
+Respond in JSON format:
+{
+  "improvements": [
+    {
+      "category": "clarity" | "conciseness" | "tone" | "audience" | "structure",
+      "issue": "Description of the issue",
+      "suggestion": "Specific actionable improvement",
+      "example": "Example of improved text (if applicable)"
+    }
+  ],
+  "improved_draft": "A revised version incorporating all improvements",
+  "overall_score": {
+    "clarity": 1-10,
+    "conciseness": 1-10,
+    "tone": 1-10
+  }
+}`;
+
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            improvements: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  category: { type: "string" },
+                  issue: { type: "string" },
+                  suggestion: { type: "string" },
+                  example: { type: "string" }
+                }
+              }
+            },
+            improved_draft: { type: "string" },
+            overall_score: {
+              type: "object",
+              properties: {
+                clarity: { type: "number" },
+                conciseness: { type: "number" },
+                tone: { type: "number" }
+              }
+            }
+          }
+        }
+      });
+
+      setImprovements(result.improvements || []);
+      toast.success(`Found ${result.improvements?.length || 0} improvement suggestions`);
+    } catch (error) {
+      toast.error("Failed to analyze draft");
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  const applyImprovement = (improvement) => {
+    if (improvement.example) {
+      // Simple approach: append the example to help user
+      toast.success("Tip: " + improvement.suggestion);
+    }
   };
 
   return (
@@ -254,14 +373,32 @@ Respond in JSON format:
             </div>
             <div>
               <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                Recipient
+                Target Audience
               </Label>
-              <Input
-                placeholder="e.g., Enterprise customer"
-                value={recipientContext}
-                onChange={(e) => setRecipientContext(e.target.value)}
-              />
+              <Select value={targetAudience} onValueChange={setTargetAudience}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {audienceOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium text-slate-700 mb-2 block">
+              Recipient Context (optional)
+            </Label>
+            <Input
+              placeholder="e.g., Enterprise customer, CTO level"
+              value={recipientContext}
+              onChange={(e) => setRecipientContext(e.target.value)}
+            />
           </div>
 
           {/* Input */}
@@ -313,38 +450,120 @@ Respond in JSON format:
               {/* Draft Content */}
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-slate-700">
-                    {currentType?.name}
-                  </h3>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-semibold text-slate-700">
+                      {currentType?.name}
+                    </h3>
+                    {keywords.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {keywords.slice(0, 3).map((kw) => (
+                          <Badge key={kw} variant="secondary" className="text-xs">
+                            {kw}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleImprove}
+                      disabled={isImproving}
+                      className="text-violet-600 hover:text-violet-700"
+                    >
+                      {isImproving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-1" />
+                          Improve
+                        </>
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => { setDraft(null); setEditedDraft(""); }}
+                      onClick={() => { 
+                        setDraft(null); 
+                        setEditedDraft(""); 
+                        setKeywords([]);
+                        setImprovements([]);
+                      }}
                     >
                       <RotateCcw className="w-4 h-4 mr-1" />
-                      Regenerate
+                      New
                     </Button>
                   </div>
                 </div>
 
+                {/* Improvements */}
+                {improvements.length > 0 && (
+                  <div className="mb-4 space-y-2 max-h-48 overflow-y-auto">
+                    {improvements.map((imp, idx) => (
+                      <div 
+                        key={idx}
+                        className="p-3 bg-violet-50 border border-violet-200 rounded-lg"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-violet-800 capitalize mb-1">
+                              {imp.category}
+                            </p>
+                            <p className="text-xs text-violet-700 mb-1">
+                              <strong>Issue:</strong> {imp.issue}
+                            </p>
+                            <p className="text-xs text-violet-600">
+                              <strong>Fix:</strong> {imp.suggestion}
+                            </p>
+                            {imp.example && (
+                              <p className="text-xs text-violet-500 mt-1 italic">
+                                "{imp.example}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <Textarea
                   value={editedDraft}
                   onChange={(e) => setEditedDraft(e.target.value)}
-                  className="min-h-[300px] font-mono text-sm"
+                  className="min-h-[280px] text-sm"
                 />
 
                 {/* Suggestions */}
-                {draft.suggestions?.length > 0 && (
+                {draft.suggestions?.length > 0 && improvements.length === 0 && (
                   <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                     <p className="text-xs font-medium text-amber-800 mb-2">
-                      💡 Suggestions
+                      💡 Quick Tips
                     </p>
                     <ul className="space-y-1">
                       {draft.suggestions.map((s, idx) => (
                         <li key={idx} className="text-xs text-amber-700">• {s}</li>
                       ))}
                     </ul>
+                  </div>
+                )}
+
+                {/* Keywords */}
+                {keywords.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs font-medium text-slate-600 mb-2">
+                      Suggested Keywords
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {keywords.map((kw) => (
+                        <Badge key={kw} variant="outline" className="text-xs">
+                          {kw}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
