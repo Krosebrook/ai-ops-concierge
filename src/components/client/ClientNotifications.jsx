@@ -13,7 +13,7 @@ import {
   Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatRelativeTime } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 const NOTIFICATION_ICONS = {
@@ -148,7 +148,7 @@ function NotificationItem({ notification, onMarkRead, onDelete, compact = false 
             {notification.message}
           </p>
           <p className="text-xs mt-2 opacity-75">
-            {formatRelativeTime(new Date(notification.created_date))}
+            {formatDistanceToNow(new Date(notification.created_date), { addSuffix: true })}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
