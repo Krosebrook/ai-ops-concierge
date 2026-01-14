@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { HelpCircle, MessageSquare, Sparkles, Shield, LayoutDashboard, BookOpen, Clock, Bot } from "lucide-react";
+import { HelpCircle, MessageSquare, Sparkles, Shield, LayoutDashboard, BookOpen, Clock, Bot, Bell } from "lucide-react";
 import ClientAsk from "@/components/client/ClientAsk";
 import SupportRequestForm from "@/components/client/SupportRequestForm";
 import FAQ from "@/components/client/FAQ";
 import SupportHistory from "@/components/client/SupportHistory";
 import AccountDashboard from "@/components/client/AccountDashboard";
 import Chatbot from "@/components/client/Chatbot";
+import ClientNotifications from "@/components/client/ClientNotifications";
 
 export default function ClientPortal() {
   const [user, setUser] = useState(null);
@@ -72,8 +73,12 @@ export default function ClientPortal() {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="chat" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-slate-100 p-1">
+        <Tabs defaultValue="notifications" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-7 bg-slate-100 p-1">
+            <TabsTrigger value="notifications" className="gap-2">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Notifications</span>
+            </TabsTrigger>
             <TabsTrigger value="chat" className="gap-2">
               <Bot className="w-4 h-4" />
               <span className="hidden sm:inline">Chat</span>
@@ -99,6 +104,10 @@ export default function ClientPortal() {
               <span className="hidden sm:inline">Ask</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="notifications">
+            <ClientNotifications userEmail={user?.email} />
+          </TabsContent>
 
           <TabsContent value="chat">
             <Card className="overflow-hidden shadow-lg border-0">
