@@ -63,7 +63,13 @@ export default function Settings() {
     queryFn: () => base44.entities.Document.filter({ status: "active" }),
   });
 
+  const { data: customRoles = [] } = useQuery({
+    queryKey: ["customRoles"],
+    queryFn: () => base44.entities.CustomRole.list(),
+  });
+
   const isAdmin = user?.role === "admin";
+  const queryClient = useQueryClient();
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -90,6 +96,10 @@ export default function Settings() {
           <TabsTrigger value="users" className="gap-2">
             <Users className="w-4 h-4" />
             Users & Roles
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="gap-2">
+            <Shield className="w-4 h-4" />
+            Custom Roles
           </TabsTrigger>
           <TabsTrigger value="sources" className="gap-2">
             <FileText className="w-4 h-4" />
