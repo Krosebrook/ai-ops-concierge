@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Send, Loader2, Bot, User, AlertCircle, ExternalLink } from "lucide-react";
+import { Send, Loader2, Bot, User, AlertCircle, ExternalLink, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DocumentUploader from "@/components/common/DocumentUploader";
+import FeedbackDialog from "./FeedbackDialog";
 import { toast } from "sonner";
 
 export default function Chatbot() {
@@ -20,6 +22,9 @@ export default function Chatbot() {
   const [input, setInput] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [user, setUser] = useState(null);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState(null);
   const messagesEndRef = useRef(null);
   const queryClient = useQueryClient();
 
@@ -67,10 +72,15 @@ export default function Chatbot() {
     setInput("");
     setIsProcessing(true);
 
+    const docContext = uploadedDocs.length > 0
+      ? uploadedDocs.map(d => `[UPLOADED: ${d.name}]\n${d.content}`).join("\n\n")
+      : "";
+
     const knowledgeContext = [
+      docContext,
       ...externalQAs.slice(0, 10).map(qa => `Q: ${qa.question}\nA: ${qa.answer}`),
       ...externalDocs.slice(0, 5).map(d => `[${d.title}]\n${d.content?.slice(0, 300) || ""}`)
-    ].join("\n\n---\n\n");
+    ].filter(Boolean).join("\n\n---\n\n");
 
     const prompt = `You are a helpful customer support chatbot.
 
@@ -114,6 +124,7 @@ Respond in JSON format:
         role: "assistant",
         content: result.answer,
         timestamp: new Date(),
+        id: Math.random(),
         needsEscalation: result.needs_escalation,
         escalationData: result.needs_escalation ? {
           reason: result.escalation_reason,
@@ -123,6 +134,7 @@ Respond in JSON format:
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      setFeedbackMessage(assistantMessage);
 
       // Auto-create ticket if escalation needed
       if (result.needs_escalation && user) {
@@ -206,6 +218,21 @@ Respond in JSON format:
               )}
             </div>
 
+            {message.role === "assistant" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFeedbackMessage(message);
+                  setShowFeedback(true);
+                }}
+                className="mt-2 text-xs text-slate-500 hover:text-slate-700 -ml-8"
+              >
+                <MessageSquare className="w-3 h-3 mr-1" />
+                Feedback
+              </Button>
+            )}
+
             {message.role === "user" && (
               <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
                 <User className="w-4 h-4 text-slate-600" />
@@ -230,7 +257,11 @@ Respond in JSON format:
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-200 p-4 bg-white">
+      <div className="border-t border-slate-200 p-4 bg-white space-y-3">
+        <DocumentUploader
+          onDocumentsAdd={setUploadedDocs}
+          maxFiles={2}
+        />
         <div className="flex gap-2">
           <Input
             placeholder="Ask me anything..."
@@ -257,6 +288,18 @@ Respond in JSON format:
           Complex questions will automatically create a support ticket
         </p>
       </div>
+
+      {/* Feedback Dialog */}
+      {feedbackMessage && (
+        <FeedbackDialog
+          open={showFeedback}
+          onOpenChange={setShowFeedback}
+          referenceId={feedbackMessage.id}
+          feedbackType="ai_response"
+          title="AI Response Feedback"
+          userEmail={user?.email}
+        />
+      )}
     </div>
   );
 }

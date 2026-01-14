@@ -47,6 +47,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [currentEventId, setCurrentEventId] = useState(null);
+  const [uploadedDocs, setUploadedDocs] = useState([]);
   const textareaRef = useRef(null);
   
   const queryClient = useQueryClient();
@@ -236,12 +237,10 @@ Respond in JSON format:
           />
           
           {/* Document Uploader */}
-          <div className="mt-4 pt-4 border-t border-slate-100">
-            <DocumentUploader
-              onDocumentsAdd={setUploadedDocs}
-              maxFiles={3}
-            />
-          </div>
+          <DocumentUploader
+            onDocumentsAdd={setUploadedDocs}
+            maxFiles={3}
+          />
         </div>
 
         {/* Context Section */}

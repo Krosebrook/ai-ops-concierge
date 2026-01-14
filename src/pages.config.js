@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import KnowledgeBase from './pages/KnowledgeBase';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
+import WorkflowAutomation from './pages/WorkflowAutomation';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "KnowledgeBase": KnowledgeBase,
     "Settings": Settings,
     "Tasks": Tasks,
+    "WorkflowAutomation": WorkflowAutomation,
 }
 
 export const pagesConfig = {
