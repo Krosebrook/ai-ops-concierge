@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -40,7 +41,8 @@ import {
   Loader2,
   AlertTriangle,
   FileText,
-  X
+  X,
+  ListTodo
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -57,6 +59,15 @@ export default function AuditLog() {
   const [filterUser, setFilterUser] = useState("all");
   const [dateRange, setDateRange] = useState({ from: null, to: null });
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [taskFromEvent, setTaskFromEvent] = useState(null);
+  const [user, setUser] = useState(null);
+
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["aiEvents"],
@@ -442,8 +453,177 @@ export default function AuditLog() {
               </div>
             </div>
           )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTaskFromEvent(selectedEvent);
+                setShowTaskDialog(true);
+              }}
+            >
+              <ListTodo className="w-4 h-4 mr-2" />
+              Convert to Task
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create Task from Event Dialog */}
+      <CreateTaskFromEventDialog
+        event={taskFromEvent}
+        open={showTaskDialog}
+        onOpenChange={(open) => {
+          setShowTaskDialog(open);
+          if (!open) setTaskFromEvent(null);
+        }}
+        user={user}
+        queryClient={queryClient}
+      />
     </div>
+  );
+}
+
+function CreateTaskFromEventDialog({ event, open, onOpenChange, user, queryClient }) {
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    assigned_team: "",
+    priority: "medium"
+  });
+
+  useEffect(() => {
+    if (event) {
+      setFormData({
+        title: event.input?.slice(0, 100) || "Task from AI event",
+        description: event.output?.slice(0, 500) || "",
+        assigned_team: event.escalation_target || "",
+        priority: event.escalation_target ? "high" : "medium"
+      });
+    }
+  }, [event]);
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list(),
+  });
+
+  const createTaskMutation = useMutation({
+    mutationFn: (taskData) => base44.entities.Task.create(taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["tasks"]);
+      toast.success("Task created successfully");
+      onOpenChange(false);
+    },
+    onError: () => {
+      toast.error("Failed to create task");
+    }
+  });
+
+  const handleSubmit = () => {
+    if (!formData.title.trim()) return;
+    
+    createTaskMutation.mutate({
+      ...formData,
+      event_id: event?.id,
+      status: "open",
+      ai_answer: event?.output,
+      citations: event?.sources?.map(s => s.document_title) || []
+    });
+  };
+
+  if (!event) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create Task from AI Event</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Title *
+            </label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Description
+            </label>
+            <Input
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Priority
+              </label>
+              <Select value={formData.priority} onValueChange={(v) => setFormData({ ...formData, priority: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">
+                Assign To
+              </label>
+              <Select value={formData.assigned_user_id} onValueChange={(v) => setFormData({ ...formData, assigned_user_id: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {event.escalation_target && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs font-medium text-amber-800">
+                📌 Escalation Target: {event.escalation_target}
+              </p>
+              {event.escalation_reason && (
+                <p className="text-xs text-amber-700 mt-1">{event.escalation_reason}</p>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={createTaskMutation.isPending || !formData.title.trim()}
+          >
+            {createTaskMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Task"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

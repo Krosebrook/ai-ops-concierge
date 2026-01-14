@@ -45,7 +45,10 @@ export default function Home() {
   const [response, setResponse] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const [currentEventId, setCurrentEventId] = useState(null);
   const textareaRef = useRef(null);
+  
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
@@ -133,7 +136,7 @@ Respond in JSON format:
       setResponse(result);
 
       // Log the AI event
-      await base44.entities.AIEvent.create({
+      const eventRecord = await base44.entities.AIEvent.create({
         user_id: user?.id,
         user_email: user?.email,
         user_role: user?.role,
@@ -151,6 +154,28 @@ Respond in JSON format:
         escalation_target: result.escalation?.target,
         escalation_reason: result.escalation?.reason
       });
+      
+      setCurrentEventId(eventRecord.id);
+      
+      // Auto-create task if escalation recommended
+      if (result.escalation?.target) {
+        try {
+          await base44.entities.Task.create({
+            title: question.slice(0, 100),
+            description: `Escalation: ${result.escalation.reason}`,
+            event_id: eventRecord.id,
+            assigned_team: result.escalation.target,
+            status: "open",
+            priority: "high",
+            ai_answer: result.answer,
+            citations: result.citations?.map(c => c.title) || []
+          });
+          queryClient.invalidateQueries(["tasks"]);
+          toast.success("Task created from escalation");
+        } catch (error) {
+          console.error("Failed to auto-create task:", error);
+        }
+      }
 
     } catch (error) {
       toast.error("Failed to get response. Please try again.");

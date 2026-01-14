@@ -29,6 +29,7 @@ const navigation = [
   { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence" },
   { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts" },
   { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A" },
+  { name: "Tasks", href: "Tasks", icon: ClipboardList, description: "Manage actionable tasks" },
   { name: "Audit Log", href: "AuditLog", icon: ClipboardList, description: "Review AI interactions" },
   { name: "Client Portal", href: "ClientPortal", icon: Sparkles, description: "External client access", external: true },
   { name: "Settings", href: "Settings", icon: Settings, description: "Configure roles & sources" },
