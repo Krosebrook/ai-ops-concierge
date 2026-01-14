@@ -33,10 +33,14 @@ import {
   X,
   Loader2,
   ListTodo,
-  ExternalLink
+  ExternalLink,
+  Repeat2,
+  Link as LinkIcon,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
 const STATUS_CONFIG = {
