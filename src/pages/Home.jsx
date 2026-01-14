@@ -30,6 +30,7 @@ import ReactMarkdown from "react-markdown";
 import ConfidenceBadge from "@/components/ui/ConfidenceBadge";
 import CitationCard from "@/components/ui/CitationCard";
 import PolicyFlag from "@/components/ui/PolicyFlag";
+import DocumentUploader from "@/components/common/DocumentUploader";
 import { toast } from "sonner";
 
 const contextOptions = {
@@ -70,8 +71,14 @@ export default function Home() {
     setIsLoading(true);
     setResponse(null);
 
+    // Build knowledge context with documents filtered by user role
+    const roleFilteredDocs = user?.role === "admin" 
+      ? documents 
+      : documents.filter(d => !d.tags?.includes("internal_only"));
+    
     const knowledgeContext = [
-      ...documents.slice(0, 10).map(d => `[DOC: ${d.title}]\n${d.content?.slice(0, 500) || ""}`),
+      ...uploadedDocs.slice(0, 5).map(d => `[UPLOADED: ${d.name}]\n${d.content?.slice(0, 300) || ""}`),
+      ...roleFilteredDocs.slice(0, 10).map(d => `[DOC: ${d.title}]\n${d.content?.slice(0, 500) || ""}`),
       ...curatedQAs.slice(0, 10).map(qa => `[Q&A]\nQ: ${qa.question}\nA: ${qa.answer}`)
     ].join("\n\n---\n\n");
 
@@ -227,6 +234,14 @@ Respond in JSON format:
               }
             }}
           />
+          
+          {/* Document Uploader */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <DocumentUploader
+              onDocumentsAdd={setUploadedDocs}
+              maxFiles={3}
+            />
+          </div>
         </div>
 
         {/* Context Section */}
