@@ -323,6 +323,11 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
+        {/* Custom Roles */}
+        <TabsContent value="roles" className="space-y-6">
+          <CustomRolesPanel roles={customRoles} queryClient={queryClient} isAdmin={isAdmin} />
+        </TabsContent>
+
         {/* Data Sources */}
         <TabsContent value="sources" className="space-y-6">
           <Card>
@@ -423,5 +428,354 @@ export default function Settings() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+const AVAILABLE_PERMISSIONS = [
+  { id: "ask_mode", label: "Ask Mode" },
+  { id: "draft_mode", label: "Draft Mode" },
+  { id: "view_knowledge_base", label: "View Knowledge Base" },
+  { id: "upload_documents", label: "Upload Documents" },
+  { id: "create_qa", label: "Create Q&A" },
+  { id: "approve_qa", label: "Approve Q&A" },
+  { id: "view_audit_log", label: "View Audit Log" },
+  { id: "manage_tasks", label: "Manage Tasks" },
+  { id: "manage_users", label: "Manage Users" },
+  { id: "manage_settings", label: "Manage Settings" },
+  { id: "manage_roles", label: "Manage Roles" },
+  { id: "export_data", label: "Export Data" },
+  { id: "client_portal_access", label: "Client Portal Access" },
+];
+
+function CustomRolesPanel({ roles, queryClient, isAdmin }) {
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+
+  if (!isAdmin) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <p className="text-sm text-slate-500 text-center">
+            Only administrators can manage custom roles.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-slate-500" />
+                Custom Roles
+              </CardTitle>
+              <CardDescription>
+                Define custom roles and assign permissions to users
+              </CardDescription>
+            </div>
+            <Button
+              onClick={() => setShowCreateDialog(true)}
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Role
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {roles.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-8">
+                No custom roles yet. Create one to get started.
+              </p>
+            ) : (
+              roles.map((role) => (
+                <div
+                  key={role.id}
+                  className="p-4 border border-slate-200 rounded-lg flex items-start justify-between"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-800">{role.name}</h4>
+                    {role.description && (
+                      <p className="text-sm text-slate-600 mt-1">
+                        {role.description}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-1 mt-3">
+                      {role.permissions.slice(0, 4).map((perm) => (
+                        <Badge key={perm} variant="secondary" className="text-xs">
+                          {perm.replace(/_/g, " ")}
+                        </Badge>
+                      ))}
+                      {role.permissions.length > 4 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{role.permissions.length - 4}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingRole(role)}
+                    >
+                      <Edit2 className="w-4 h-4 text-slate-400" />
+                    </Button>
+                    <DeleteRoleButton role={role} queryClient={queryClient} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <CreateRoleDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        queryClient={queryClient}
+      />
+
+      {editingRole && (
+        <EditRoleDialog
+          role={editingRole}
+          onClose={() => setEditingRole(null)}
+          queryClient={queryClient}
+        />
+      )}
+    </>
+  );
+}
+
+function DeleteRoleButton({ role, queryClient }) {
+  const mutation = useMutation({
+    mutationFn: () => base44.entities.CustomRole.delete(role.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customRoles"] });
+      toast.success("Role deleted");
+    },
+  });
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => mutation.mutate()}
+      disabled={mutation.isPending}
+    >
+      <Trash2 className="w-4 h-4 text-red-500" />
+    </Button>
+  );
+}
+
+function CreateRoleDialog({ open, onOpenChange, queryClient }) {
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    permissions: [],
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: () => base44.entities.CustomRole.create(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customRoles"] });
+      toast.success("Role created");
+      onOpenChange(false);
+      setFormData({ name: "", description: "", permissions: [] });
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim() || formData.permissions.length === 0) return;
+    setIsSubmitting(true);
+    await mutation.mutateAsync();
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create New Role</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Role Name *
+            </label>
+            <Input
+              placeholder="e.g., Support Lead"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Description
+            </label>
+            <Input
+              placeholder="Role description..."
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-3 block">
+              Permissions *
+            </label>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {AVAILABLE_PERMISSIONS.map((perm) => (
+                <label
+                  key={perm.id}
+                  className="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={formData.permissions.includes(perm.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFormData({
+                          ...formData,
+                          permissions: [...formData.permissions, perm.id],
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          permissions: formData.permissions.filter(
+                            (p) => p !== perm.id
+                          ),
+                        });
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-slate-700">{perm.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !formData.name.trim()}
+          >
+            {isSubmitting ? "Creating..." : "Create Role"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditRoleDialog({ role, onClose, queryClient }) {
+  const [formData, setFormData] = useState({
+    name: role.name,
+    description: role.description || "",
+    permissions: role.permissions || [],
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      base44.entities.CustomRole.update(role.id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customRoles"] });
+      toast.success("Role updated");
+      onClose();
+    },
+  });
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim()) return;
+    setIsSubmitting(true);
+    await mutation.mutateAsync();
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog open={!!role} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Role</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Role Name
+            </label>
+            <Input
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Description
+            </label>
+            <Input
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-3 block">
+              Permissions
+            </label>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {AVAILABLE_PERMISSIONS.map((perm) => (
+                <label
+                  key={perm.id}
+                  className="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer"
+                >
+                  <Checkbox
+                    checked={formData.permissions.includes(perm.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setFormData({
+                          ...formData,
+                          permissions: [...formData.permissions, perm.id],
+                        });
+                      } else {
+                        setFormData({
+                          ...formData,
+                          permissions: formData.permissions.filter(
+                            (p) => p !== perm.id
+                          ),
+                        });
+                      }
+                    }}
+                  />
+                  <span className="text-sm text-slate-700">{perm.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? "Updating..." : "Update Role"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
