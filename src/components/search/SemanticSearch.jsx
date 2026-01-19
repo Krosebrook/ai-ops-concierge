@@ -19,97 +19,21 @@ export default function SemanticSearch({ onResultClick }) {
     setIsSearching(true);
     
     try {
-      // Fetch all knowledge base content
-      const [documents, qas] = await Promise.all([
-        base44.entities.Document.filter({ status: "active" }),
-        base44.entities.CuratedQA.filter({ status: "approved" })
-      ]);
-
-      // Build context for semantic understanding
-      const knowledgeContext = [
-        ...documents.map(d => ({
-          type: "document",
-          id: d.id,
-          title: d.title,
-          content: d.content || "",
-          tags: d.tags || []
-        })),
-        ...qas.map(qa => ({
-          type: "qa",
-          id: qa.id,
-          title: qa.question,
-          content: qa.answer,
-          tags: qa.tags || []
-        }))
-      ];
-
-      const prompt = `You are a semantic search engine analyzing a user's query against a knowledge base.
-
-USER QUERY: "${query}"
-
-KNOWLEDGE BASE:
-${knowledgeContext.map((item, idx) => 
-  `[${idx}] ${item.type.toUpperCase()}: ${item.title}\n${item.content.slice(0, 500)}\nTags: ${item.tags.join(", ")}`
-).join("\n\n---\n\n")}
-
-TASK:
-1. Understand the user's intent and what they're really asking for
-2. Find the most relevant items from the knowledge base
-3. For each relevant item, extract the specific section that answers the query
-4. Rank by relevance (0.0 to 1.0)
-
-Return the top 5 most relevant results with extracted highlights.
-
-Respond in JSON format:
-{
-  "intent": "What the user is trying to find out",
-  "results": [
-    {
-      "index": number (the [idx] from above),
-      "relevance": 0.0-1.0,
-      "highlight": "The specific relevant excerpt from content (max 200 chars)",
-      "reason": "Why this is relevant to the query"
-    }
-  ]
-}`;
-
-      const searchResult = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            intent: { type: "string" },
-            results: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  index: { type: "number" },
-                  relevance: { type: "number" },
-                  highlight: { type: "string" },
-                  reason: { type: "string" }
-                }
-              }
-            }
-          }
-        }
-      });
-
-      // Map results back to original items
-      const enrichedResults = searchResult.results.map(r => ({
-        ...knowledgeContext[r.index],
-        relevance: r.relevance,
-        highlight: r.highlight,
-        reason: r.reason
-      }));
-
+      const response = await base44.functions.invoke("semanticSearch", { query });
+      
       setResults({
-        intent: searchResult.intent,
-        items: enrichedResults
+        intent: response.data.intent,
+        items: response.data.results,
+        totalSearched: response.data.total_searched
       });
 
     } catch (error) {
       console.error("Search failed:", error);
+      setResults({
+        intent: "Search failed - please try again",
+        items: [],
+        totalSearched: 0
+      });
     } finally {
       setIsSearching(false);
     }
@@ -152,9 +76,19 @@ Respond in JSON format:
       {results && (
         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Intent */}
-          <div className="p-3 bg-violet-50 border border-violet-200 rounded-lg">
-            <p className="text-xs font-medium text-violet-600 mb-1">Understanding your query:</p>
-            <p className="text-sm text-violet-800">{results.intent}</p>
+          <div className="p-3 bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-medium text-violet-600 mb-1">Understanding your query:</p>
+                <p className="text-sm text-violet-900">{results.intent}</p>
+                {results.totalSearched > 0 && (
+                  <p className="text-xs text-violet-600 mt-1">
+                    Searched {results.totalSearched} items • Found {results.items.length} relevant results
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Results */}
@@ -214,18 +148,36 @@ Respond in JSON format:
                       </p>
                     </div>
 
-                    {/* Relevance Score */}
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                        <span>{Math.round(item.relevance * 100)}%</span>
+                    {/* Confidence Score */}
+                    <div className="text-right flex-shrink-0">
+                      <div className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold mb-2",
+                        item.confidence >= 0.8 ? "bg-emerald-100 text-emerald-700" :
+                        item.confidence >= 0.6 ? "bg-blue-100 text-blue-700" :
+                        item.confidence >= 0.4 ? "bg-amber-100 text-amber-700" :
+                        "bg-slate-100 text-slate-600"
+                      )}>
+                        <Sparkles className="w-3 h-3" />
+                        <span>{Math.round(item.confidence * 100)}%</span>
                       </div>
-                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
-                          style={{ width: `${item.relevance * 100}%` }}
+                          className={cn(
+                            "h-full rounded-full transition-all",
+                            item.confidence >= 0.8 ? "bg-gradient-to-r from-emerald-500 to-teal-500" :
+                            item.confidence >= 0.6 ? "bg-gradient-to-r from-blue-500 to-indigo-500" :
+                            item.confidence >= 0.4 ? "bg-gradient-to-r from-amber-500 to-orange-500" :
+                            "bg-slate-400"
+                          )}
+                          style={{ width: `${item.confidence * 100}%` }}
                         />
                       </div>
-                      <ExternalLink className="w-3 h-3 text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <p className="text-xs text-slate-500 mt-1">
+                        {item.confidence >= 0.8 ? "High" :
+                         item.confidence >= 0.6 ? "Good" :
+                         item.confidence >= 0.4 ? "Medium" : "Low"}
+                      </p>
+                      <ExternalLink className="w-3 h-3 text-slate-400 mt-2 mx-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
                 </Card>
