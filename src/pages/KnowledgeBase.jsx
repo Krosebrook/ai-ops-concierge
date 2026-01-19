@@ -45,7 +45,8 @@ import {
   XCircle,
   Loader2,
   Sparkles,
-  Globe
+  Globe,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -296,6 +297,22 @@ function DocumentCard({ document, queryClient }) {
     }
   });
 
+  const regenerateSummaryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await base44.functions.invoke("generateDocumentSummary", { 
+        documentId: document.id 
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["documents"]);
+      toast.success("AI summary regenerated");
+    },
+    onError: () => {
+      toast.error("Failed to regenerate summary");
+    }
+  });
+
   return (
     <Card className="bg-white hover:shadow-md transition-shadow group">
       <div className="p-5">
@@ -324,6 +341,13 @@ function DocumentCard({ document, queryClient }) {
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => regenerateSummaryMutation.mutate()}
+                disabled={regenerateSummaryMutation.isPending}
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {regenerateSummaryMutation.isPending ? "Generating..." : "Regenerate AI Summary"}
+              </DropdownMenuItem>
               {user?.role === "admin" && (
                 <DropdownMenuItem onClick={() => toggleExternalMutation.mutate()}>
                   <Globe className="w-4 h-4 mr-2" />
@@ -337,6 +361,17 @@ function DocumentCard({ document, queryClient }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {document.ai_summary && (
+          <div className="mt-3 p-3 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-100">
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-violet-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-slate-700 leading-relaxed">{document.ai_summary}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {document.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-4">
@@ -465,7 +500,7 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
     
     setIsUploading(true);
     try {
-      await base44.entities.Document.create({
+      const newDoc = await base44.entities.Document.create({
         title,
         content,
         type: fileType,
@@ -476,8 +511,17 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
         owner_name: user?.full_name
       });
       
+      // Generate AI summary in background
+      toast.promise(
+        base44.functions.invoke("generateDocumentSummary", { documentId: newDoc.id }),
+        {
+          loading: "Generating AI summary...",
+          success: "Document uploaded with AI summary",
+          error: "Document uploaded but summary failed"
+        }
+      );
+
       queryClient.invalidateQueries(["documents"]);
-      toast.success("Document uploaded successfully");
       onOpenChange(false);
       setTitle("");
       setContent("");
