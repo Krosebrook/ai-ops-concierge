@@ -8,6 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AIAssistant from "@/components/kb/AIAssistant";
+import ContentAnalysis from "@/components/kb/ContentAnalysis";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +48,9 @@ import {
   Loader2,
   Sparkles,
   Globe,
-  Zap
+  Zap,
+  Bot,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -208,6 +212,16 @@ export default function KnowledgeBase() {
             <HelpCircle className="w-4 h-4" />
             Curated Q&A ({curatedQAs.length})
           </TabsTrigger>
+          <TabsTrigger value="assistant" className="gap-2">
+            <Bot className="w-4 h-4" />
+            AI Assistant
+          </TabsTrigger>
+          {user?.role === "admin" && (
+            <TabsTrigger value="analysis" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Content Analysis
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="documents" className="mt-6">
@@ -251,6 +265,16 @@ export default function KnowledgeBase() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="assistant" className="mt-6">
+          <AIAssistant />
+        </TabsContent>
+
+        {user?.role === "admin" && (
+          <TabsContent value="analysis" className="mt-6">
+            <ContentAnalysis />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Upload Dialog */}
@@ -494,6 +518,41 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
   const [fileType, setFileType] = useState("md");
   const [tags, setTags] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [autoTagging, setAutoTagging] = useState(false);
+
+  const handleAutoTag = async () => {
+    if (!title.trim() || !content.trim()) return;
+    
+    setAutoTagging(true);
+    try {
+      // Create temporary doc for analysis
+      const tempDoc = await base44.entities.Document.create({
+        title,
+        content,
+        type: fileType,
+        status: "active",
+        version: 1,
+        owner_id: user?.id,
+        owner_name: user?.full_name
+      });
+
+      const response = await base44.functions.invoke("analyzeDocument", {
+        documentId: tempDoc.id,
+        analysisType: "auto_tag"
+      });
+
+      setTags(response.data.suggested_tags || []);
+      
+      // Delete temp doc
+      await base44.entities.Document.delete(tempDoc.id);
+      
+      toast.success("AI tags suggested");
+    } catch (error) {
+      toast.error("Auto-tagging failed");
+    } finally {
+      setAutoTagging(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!title.trim() || !content.trim()) return;
@@ -564,7 +623,19 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
               </Select>
             </div>
             <div>
-              <Label>Tags</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Tags</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleAutoTag}
+                  disabled={!title.trim() || !content.trim() || autoTagging}
+                  className="text-xs gap-1 h-7"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  {autoTagging ? "Analyzing..." : "AI Suggest"}
+                </Button>
+              </div>
               <Select 
                 value={tags[0] || ""} 
                 onValueChange={(v) => setTags(prev => prev.includes(v) ? prev : [...prev, v])}
