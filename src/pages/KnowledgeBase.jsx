@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIAssistant from "@/components/kb/AIAssistant";
+import EnhancedAIAssistant from "@/components/kb/EnhancedAIAssistant";
 import ContentAnalysis from "@/components/kb/ContentAnalysis";
 import ForYouFeed from "@/components/kb/ForYouFeed";
 import ContentGaps from "@/components/kb/ContentGaps";
 import CollaborativeEditor from "@/components/kb/CollaborativeEditor";
+import EnhancedCollaborativeEditor from "@/components/kb/EnhancedCollaborativeEditor";
 import VersionHistory from "@/components/kb/VersionHistory";
 import {
   Dialog,
@@ -323,7 +325,7 @@ export default function KnowledgeBase() {
         </TabsContent>
 
         <TabsContent value="assistant" className="mt-6">
-          <AIAssistant />
+          <EnhancedAIAssistant user={user} />
         </TabsContent>
 
         <TabsContent value="gaps" className="mt-6">
@@ -361,8 +363,9 @@ export default function KnowledgeBase() {
             <DialogTitle>Edit Document</DialogTitle>
           </DialogHeader>
           {editingDocument && (
-            <CollaborativeEditor
+            <EnhancedCollaborativeEditor
               document={editingDocument}
+              user={user}
               onSave={(updated) => {
                 queryClient.invalidateQueries(["documents"]);
                 setEditingDocument(null);
