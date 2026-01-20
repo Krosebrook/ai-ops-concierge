@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import ExternalSourcesManager from "../components/kb/ExternalSourcesManager";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -104,6 +105,10 @@ export default function Settings() {
           <TabsTrigger value="sources" className="gap-2">
             <FileText className="w-4 h-4" />
             Data Sources
+          </TabsTrigger>
+          <TabsTrigger value="external" className="gap-2">
+            <Globe className="w-4 h-4" />
+            External Sources
           </TabsTrigger>
         </TabsList>
 
@@ -432,6 +437,11 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* External Sources */}
+        <TabsContent value="external">
+          <ExternalSourcesManager />
         </TabsContent>
       </Tabs>
     </div>
