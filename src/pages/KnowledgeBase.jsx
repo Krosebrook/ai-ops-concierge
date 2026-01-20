@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIAssistant from "@/components/kb/AIAssistant";
 import ContentAnalysis from "@/components/kb/ContentAnalysis";
+import ForYouFeed from "@/components/kb/ForYouFeed";
+import CollaborativeEditor from "@/components/kb/CollaborativeEditor";
+import VersionHistory from "@/components/kb/VersionHistory";
 import {
   Dialog,
   DialogContent,
@@ -204,6 +207,10 @@ export default function KnowledgeBase() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-100 p-1">
+          <TabsTrigger value="foryou" className="gap-2">
+            <Sparkles className="w-4 h-4" />
+            For You
+          </TabsTrigger>
           <TabsTrigger value="documents" className="gap-2">
             <FileText className="w-4 h-4" />
             Documents ({documents.filter(d => d.status === "active").length})
