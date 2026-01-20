@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIAssistant from "@/components/kb/AIAssistant";
 import ContentAnalysis from "@/components/kb/ContentAnalysis";
 import ForYouFeed from "@/components/kb/ForYouFeed";
+import ContentGaps from "@/components/kb/ContentGaps";
 import CollaborativeEditor from "@/components/kb/CollaborativeEditor";
 import VersionHistory from "@/components/kb/VersionHistory";
 import {
@@ -53,7 +54,8 @@ import {
   Globe,
   Zap,
   Bot,
-  BarChart3
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -248,6 +250,12 @@ export default function KnowledgeBase() {
             <Bot className="w-4 h-4" />
             AI Assistant
           </TabsTrigger>
+          {hasPermission('review_ai_suggestions') && (
+            <TabsTrigger value="gaps" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Content Gaps
+            </TabsTrigger>
+          )}
           {user?.role === "admin" && (
             <TabsTrigger value="analysis" className="gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -316,6 +324,10 @@ export default function KnowledgeBase() {
 
         <TabsContent value="assistant" className="mt-6">
           <AIAssistant />
+        </TabsContent>
+
+        <TabsContent value="gaps" className="mt-6">
+          <ContentGaps user={user} hasPermission={hasPermission} />
         </TabsContent>
 
         {user?.role === "admin" && (
@@ -620,7 +632,7 @@ function QACard({ qa, user, queryClient }) {
   );
 }
 
-function UploadDialog({ open, onOpenChange, user, queryClient }) {
+function UploadDialog({ open, onOpenChange, user, canPublish, queryClient }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [fileType, setFileType] = useState("md");
