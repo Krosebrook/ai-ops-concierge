@@ -235,13 +235,20 @@ export default function Settings() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={cn(
-                            u.role === "admin"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-700"
-                          )}>
-                            {u.role || "user"}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={cn(
+                              u.role === "admin"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-slate-100 text-slate-700"
+                            )}>
+                              {u.role || "user"}
+                            </Badge>
+                            {u.custom_role_id && customRoles.find(r => r.id === u.custom_role_id) && (
+                              <Badge variant="outline" className="text-xs">
+                                {customRoles.find(r => r.id === u.custom_role_id).name}
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm text-slate-500">
                           {u.created_date ? format(new Date(u.created_date), "MMM d, yyyy") : "-"}
@@ -436,8 +443,12 @@ const AVAILABLE_PERMISSIONS = [
   { id: "draft_mode", label: "Draft Mode" },
   { id: "view_knowledge_base", label: "View Knowledge Base" },
   { id: "upload_documents", label: "Upload Documents" },
+  { id: "publish_documents", label: "Publish Documents" },
+  { id: "suggest_edits", label: "Suggest Edits" },
   { id: "create_qa", label: "Create Q&A" },
   { id: "approve_qa", label: "Approve Q&A" },
+  { id: "manage_tags", label: "Manage Tags" },
+  { id: "review_ai_suggestions", label: "Review AI Suggestions" },
   { id: "view_audit_log", label: "View Audit Log" },
   { id: "manage_tasks", label: "Manage Tasks" },
   { id: "manage_users", label: "Manage Users" },
