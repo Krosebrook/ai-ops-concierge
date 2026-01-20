@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,13 +12,26 @@ import {
   Clock, 
   Star,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+  X,
+  Megaphone,
+  AlertCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import TagBadge from "@/components/ui/TagBadge";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export default function ForYouFeed({ onItemClick }) {
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState(null);
+
+  useState(() => {
+    base44.auth.me().then(setUser).catch(() => {});
+  }, []);
+
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['recommendations'],
     queryFn: async () => {
@@ -26,6 +39,23 @@ export default function ForYouFeed({ onItemClick }) {
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: async ({ contentId, contentType, feedbackType, tags }) => {
+      if (!user) return;
+      return base44.entities.RecommendationFeedback.create({
+        user_id: user.id,
+        content_id: contentId,
+        content_type: contentType,
+        feedback_type: feedbackType,
+        tags: tags || []
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['recommendations']);
+      toast.success("Thanks for your feedback!");
+    }
   });
 
   const getCategoryIcon = (category) => {
@@ -57,6 +87,49 @@ export default function ForYouFeed({ onItemClick }) {
 
   return (
     <div className="space-y-6">
+      {/* Announcements */}
+      {data?.announcements && data.announcements.length > 0 && (
+        <div className="space-y-3">
+          {data.announcements.map((announcement) => (
+            <Card 
+              key={announcement.id}
+              className={cn(
+                "border-l-4",
+                announcement.priority === "high" ? "border-l-red-500 bg-red-50" :
+                announcement.priority === "normal" ? "border-l-blue-500 bg-blue-50" :
+                "border-l-slate-500 bg-slate-50"
+              )}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Megaphone className={cn(
+                    "w-5 h-5 mt-0.5",
+                    announcement.priority === "high" ? "text-red-600" :
+                    announcement.priority === "normal" ? "text-blue-600" : "text-slate-600"
+                  )} />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-slate-900 mb-1">
+                      {announcement.title}
+                    </h4>
+                    <p className="text-sm text-slate-700">{announcement.message}</p>
+                    {announcement.tags && announcement.tags.length > 0 && (
+                      <div className="flex gap-1 mt-2">
+                        {announcement.tags.map(tag => (
+                          <TagBadge key={tag} tag={tag} size="sm" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {format(new Date(announcement.created_date), 'MMM d')}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Insights Header */}
       {data?.insights && (
         <Card className="bg-gradient-to-r from-violet-50 to-purple-50 border-violet-200">
@@ -73,8 +146,8 @@ export default function ForYouFeed({ onItemClick }) {
                 {data.user_profile && (
                   <p className="text-xs text-violet-600 mt-2">
                     Based on {data.user_profile.queries_analyzed} recent queries
-                    {data.user_profile.interest_tags.length > 0 && 
-                      ` • Interests: ${data.user_profile.interest_tags.join(", ")}`
+                    {data.user_profile.preferred_tags?.length > 0 && 
+                      ` • You prefer: ${data.user_profile.preferred_tags.join(", ")}`
                     }
                   </p>
                 )}
@@ -166,6 +239,62 @@ export default function ForYouFeed({ onItemClick }) {
                         <span className="font-medium text-slate-700">Why recommended: </span>
                         {item.reason}
                       </p>
+                    </div>
+
+                    {/* Feedback */}
+                    <div className="mt-3 pt-3 border-t flex items-center gap-2">
+                      <span className="text-xs text-slate-500">Helpful?</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          feedbackMutation.mutate({
+                            contentId: item.id,
+                            contentType: item.type,
+                            feedbackType: 'helpful',
+                            tags: item.tags
+                          });
+                        }}
+                      >
+                        <ThumbsUp className="w-3 h-3" />
+                        <span className="text-xs">Yes</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 text-slate-600 hover:text-slate-700 hover:bg-slate-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          feedbackMutation.mutate({
+                            contentId: item.id,
+                            contentType: item.type,
+                            feedbackType: 'show_more',
+                            tags: item.tags
+                          });
+                        }}
+                      >
+                        <Star className="w-3 h-3" />
+                        <span className="text-xs">More like this</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          feedbackMutation.mutate({
+                            contentId: item.id,
+                            contentType: item.type,
+                            feedbackType: 'not_relevant',
+                            tags: item.tags
+                          });
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                        <span className="text-xs">Not relevant</span>
+                      </Button>
                     </div>
                   </div>
                 </div>

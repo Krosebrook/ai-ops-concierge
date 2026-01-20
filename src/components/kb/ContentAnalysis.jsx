@@ -14,6 +14,8 @@ export default function ContentAnalysis() {
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
+    setSelectedForArchive([]);
+    setSelectedForDraft([]);
     try {
       const response = await base44.functions.invoke("detectDuplicates", {});
       setAnalysisResults(response.data);
@@ -23,6 +25,36 @@ export default function ContentAnalysis() {
       console.error(error);
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleBatchProcess = async (action) => {
+    const ids = action === 'archive' ? selectedForArchive : selectedForDraft;
+    if (ids.length === 0) {
+      toast.error("No documents selected");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await base44.functions.invoke("batchProcessDocuments", {
+        documentIds: ids,
+        action
+      });
+
+      toast.success(`${response.data.successful} documents processed successfully`);
+      if (response.data.failed > 0) {
+        toast.warning(`${response.data.failed} documents failed`);
+      }
+
+      // Reset selections and refresh
+      setSelectedForArchive([]);
+      setSelectedForDraft([]);
+      handleAnalyze();
+    } catch (error) {
+      toast.error("Batch processing failed");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -127,15 +159,61 @@ export default function ContentAnalysis() {
             {/* Outdated */}
             {analysisResults.outdated.length > 0 && (
               <div>
-                <h4 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  Potentially Outdated Content
-                </h4>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600" />
+                    Potentially Outdated Content
+                  </h4>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBatchProcess('archive')}
+                      disabled={selectedForArchive.length === 0 || isProcessing}
+                      className="gap-1"
+                    >
+                      <Archive className="w-3 h-3" />
+                      Archive Selected ({selectedForArchive.length})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBatchProcess('draft_update')}
+                      disabled={selectedForDraft.length === 0 || isProcessing}
+                      className="gap-1"
+                    >
+                      <FileEdit className="w-3 h-3" />
+                      AI Draft Updates ({selectedForDraft.length})
+                    </Button>
+                  </div>
+                </div>
                 <div className="space-y-3">
                   {analysisResults.outdated.map((out, idx) => (
                     <Card key={idx} className="border-red-200 bg-red-50/50">
                       <CardContent className="p-4">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="pt-1 space-y-2">
+                            <Checkbox
+                              checked={selectedForArchive.includes(out.document.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedForArchive(prev => 
+                                  checked 
+                                    ? [...prev, out.document.id]
+                                    : prev.filter(id => id !== out.document.id)
+                                );
+                              }}
+                            />
+                            <Checkbox
+                              checked={selectedForDraft.includes(out.document.id)}
+                              onCheckedChange={(checked) => {
+                                setSelectedForDraft(prev => 
+                                  checked 
+                                    ? [...prev, out.document.id]
+                                    : prev.filter(id => id !== out.document.id)
+                                );
+                              }}
+                            />
+                          </div>
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4 text-red-600" />
