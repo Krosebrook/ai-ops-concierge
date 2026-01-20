@@ -30,6 +30,7 @@ const navigation = [
   { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts" },
   { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A" },
   { name: "Tasks", href: "Tasks", icon: ClipboardList, description: "Manage actionable tasks" },
+  { name: "Analytics", href: "Analytics", icon: Sparkles, description: "Usage insights & gaps" },
   { name: "Automation", href: "WorkflowAutomation", icon: Sparkles, description: "Define automation rules" },
   { name: "Audit Log", href: "AuditLog", icon: ClipboardList, description: "Review AI interactions" },
   { name: "Client Portal", href: "ClientPortal", icon: Sparkles, description: "External client access", external: true },

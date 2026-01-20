@@ -66,6 +66,20 @@ export default function Home() {
     queryFn: () => base44.entities.CuratedQA.filter({ status: "approved" }),
   });
 
+  const trackDocumentView = async (docId, docTitle) => {
+    try {
+      await base44.entities.DocumentView.create({
+        document_id: docId,
+        document_title: docTitle,
+        user_id: user?.id,
+        user_email: user?.email,
+        source: 'citation'
+      });
+    } catch (error) {
+      console.error('Failed to track view:', error);
+    }
+  };
+
   const handleAsk = async () => {
     if (!question.trim()) return;
     
@@ -79,7 +93,10 @@ export default function Home() {
     
     const knowledgeContext = [
       ...uploadedDocs.slice(0, 5).map(d => `[UPLOADED: ${d.name}]\n${d.content?.slice(0, 300) || ""}`),
-      ...roleFilteredDocs.slice(0, 10).map(d => `[DOC: ${d.title}]\n${d.content?.slice(0, 500) || ""}`),
+      ...roleFilteredDocs.slice(0, 10).map(d => {
+        const source = d.is_external ? `EXTERNAL${d.external_url ? ` (${d.external_url})` : ''}` : 'INTERNAL';
+        return `[DOC - ${source}: ${d.title}]\n${d.content?.slice(0, 500) || ""}`;
+      }),
       ...curatedQAs.slice(0, 10).map(qa => `[Q&A]\nQ: ${qa.question}\nA: ${qa.answer}`)
     ].join("\n\n---\n\n");
 
@@ -378,7 +395,11 @@ Respond in JSON format:
                     title={citation.title}
                     section={citation.section}
                     score={citation.score}
-                    onClick={() => toast.info(`Viewing: ${citation.title}`)}
+                    onClick={() => {
+                      const doc = documents.find(d => d.title === citation.title);
+                      if (doc) trackDocumentView(doc.id, doc.title);
+                      toast.info(`Viewing: ${citation.title}`);
+                    }}
                   />
                 ))}
               </div>

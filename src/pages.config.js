@@ -6,6 +6,7 @@ import KnowledgeBase from './pages/KnowledgeBase';
 import Settings from './pages/Settings';
 import Tasks from './pages/Tasks';
 import WorkflowAutomation from './pages/WorkflowAutomation';
+import Analytics from './pages/Analytics';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Settings": Settings,
     "Tasks": Tasks,
     "WorkflowAutomation": WorkflowAutomation,
+    "Analytics": Analytics,
 }
 
 export const pagesConfig = {
