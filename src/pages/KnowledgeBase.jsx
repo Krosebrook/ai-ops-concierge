@@ -72,14 +72,33 @@ export default function KnowledgeBase() {
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [user, setUser] = useState(null);
+  const [userPermissions, setUserPermissions] = useState([]);
   const [editingDocument, setEditingDocument] = useState(null);
   const [viewingVersions, setViewingVersions] = useState(null);
 
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(async (u) => {
+      setUser(u);
+      // Get user permissions from custom role
+      if (u.custom_role_id) {
+        const roles = await base44.entities.CustomRole.filter({ id: u.custom_role_id });
+        if (roles[0]) {
+          setUserPermissions(roles[0].permissions || []);
+        }
+      } else if (u.permissions) {
+        setUserPermissions(u.permissions);
+      } else if (u.role === 'admin') {
+        setUserPermissions(['*']); // Admin has all permissions
+      }
+    }).catch(() => {});
   }, []);
+
+  const hasPermission = (permission) => {
+    if (user?.role === 'admin') return true;
+    return userPermissions.includes('*') || userPermissions.includes(permission);
+  };
 
   const { data: documents = [], isLoading: docsLoading } = useQuery({
     queryKey: ["documents"],
@@ -126,20 +145,24 @@ export default function KnowledgeBase() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={() => setShowQADialog(true)}
-          >
-            <HelpCircle className="w-4 h-4 mr-2" />
-            Add Q&A
-          </Button>
-          <Button
-            onClick={() => setShowUploadDialog(true)}
-            className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Upload Document
-          </Button>
+          {hasPermission('create_qa') && (
+            <Button
+              variant="outline"
+              onClick={() => setShowQADialog(true)}
+            >
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Add Q&A
+            </Button>
+          )}
+          {hasPermission('upload_documents') && (
+            <Button
+              onClick={() => setShowUploadDialog(true)}
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Document
+            </Button>
+          )}
         </div>
       </div>
 
@@ -307,6 +330,7 @@ export default function KnowledgeBase() {
         open={showUploadDialog} 
         onOpenChange={setShowUploadDialog}
         user={user}
+        canPublish={hasPermission('publish_documents')}
         queryClient={queryClient}
       />
 
@@ -487,6 +511,24 @@ function DocumentCard({ document, queryClient, onEdit, onViewVersions }) {
 }
 
 function QACard({ qa, user, queryClient }) {
+  const [canApprove, setCanApprove] = useState(false);
+
+  useEffect(() => {
+    const checkPermission = async () => {
+      if (user?.role === 'admin') {
+        setCanApprove(true);
+        return;
+      }
+      if (user?.custom_role_id) {
+        const roles = await base44.entities.CustomRole.filter({ id: user.custom_role_id });
+        if (roles[0]) {
+          setCanApprove(roles[0].permissions?.includes('approve_qa'));
+        }
+      }
+    };
+    checkPermission();
+  }, [user]);
+
   const approveMutation = useMutation({
     mutationFn: () => base44.entities.CuratedQA.update(qa.id, { 
       status: "approved",
@@ -541,7 +583,7 @@ function QACard({ qa, user, queryClient }) {
             </p>
           </div>
 
-          {qa.status === "pending_review" && user?.role === "admin" && (
+          {qa.status === "pending_review" && canApprove && (
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -630,23 +672,31 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
         content,
         type: fileType,
         tags,
-        status: "active",
+        status: canPublish ? "active" : "draft",
         version: 1,
         owner_id: user?.id,
         owner_name: user?.full_name,
         is_external: isExternal,
         external_url: isExternal ? externalUrl : undefined
       });
+
+      const message = canPublish 
+        ? "Document published successfully" 
+        : "Document submitted for review";
       
       // Generate AI summary in background
-      toast.promise(
-        base44.functions.invoke("generateDocumentSummary", { documentId: newDoc.id }),
-        {
-          loading: "Generating AI summary...",
-          success: "Document uploaded with AI summary",
-          error: "Document uploaded but summary failed"
-        }
-      );
+      if (canPublish) {
+        toast.promise(
+          base44.functions.invoke("generateDocumentSummary", { documentId: newDoc.id }),
+          {
+            loading: "Generating AI summary...",
+            success: message + " with AI summary",
+            error: message + " but summary failed"
+          }
+        );
+      } else {
+        toast.success(message);
+      }
 
       queryClient.invalidateQueries(["documents"]);
       onOpenChange(false);
@@ -804,11 +854,20 @@ function QAFormDialog({ open, onOpenChange, user, queryClient }) {
     
     setIsSubmitting(true);
     try {
+      // Check if user has approve_qa permission via custom role
+      let canApprove = user?.role === "admin";
+      if (user?.custom_role_id) {
+        const roles = await base44.entities.CustomRole.filter({ id: user.custom_role_id });
+        if (roles[0]) {
+          canApprove = roles[0].permissions?.includes('approve_qa');
+        }
+      }
+
       await base44.entities.CuratedQA.create({
         question,
         answer,
         tags,
-        status: user?.role === "admin" ? "approved" : "pending_review",
+        status: canApprove ? "approved" : "pending_review",
         owner_id: user?.id,
         owner_name: user?.full_name
       });
