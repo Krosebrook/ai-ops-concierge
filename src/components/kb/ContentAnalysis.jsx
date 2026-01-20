@@ -4,13 +4,25 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Copy, Archive, Loader2, FileText, TrendingUp } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  AlertTriangle, 
+  Copy, 
+  Archive, 
+  Loader2, 
+  FileText, 
+  TrendingUp,
+  FileEdit
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ContentAnalysis() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState(null);
+  const [selectedForArchive, setSelectedForArchive] = useState([]);
+  const [selectedForDraft, setSelectedForDraft] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
