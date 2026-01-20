@@ -64,7 +64,7 @@ import { toast } from "sonner";
 const DOMAIN_TAGS = ["Support", "Ops", "Sales", "Compliance"];
 
 export default function KnowledgeBase() {
-  const [activeTab, setActiveTab] = useState("documents");
+  const [activeTab, setActiveTab] = useState("foryou");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -72,6 +72,8 @@ export default function KnowledgeBase() {
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [user, setUser] = useState(null);
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [viewingVersions, setViewingVersions] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -231,6 +233,16 @@ export default function KnowledgeBase() {
           )}
         </TabsList>
 
+        <TabsContent value="foryou" className="mt-6">
+          <ForYouFeed onItemClick={(item) => {
+            if (item.type === "document") {
+              setActiveTab("documents");
+            } else {
+              setActiveTab("qa");
+            }
+          }} />
+        </TabsContent>
+
         <TabsContent value="documents" className="mt-6">
           {docsLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -246,7 +258,13 @@ export default function KnowledgeBase() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredDocuments.map((doc) => (
-                <DocumentCard key={doc.id} document={doc} queryClient={queryClient} />
+                <DocumentCard 
+                  key={doc.id} 
+                  document={doc} 
+                  queryClient={queryClient}
+                  onEdit={() => setEditingDocument(doc)}
+                  onViewVersions={() => setViewingVersions(doc)}
+                />
               ))}
             </div>
           )}
@@ -299,11 +317,48 @@ export default function KnowledgeBase() {
         user={user}
         queryClient={queryClient}
       />
+
+      {/* Collaborative Editor Dialog */}
+      <Dialog open={!!editingDocument} onOpenChange={() => setEditingDocument(null)}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Document</DialogTitle>
+          </DialogHeader>
+          {editingDocument && (
+            <CollaborativeEditor
+              document={editingDocument}
+              onSave={(updated) => {
+                queryClient.invalidateQueries(["documents"]);
+                setEditingDocument(null);
+              }}
+              onClose={() => setEditingDocument(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Version History Dialog */}
+      <Dialog open={!!viewingVersions} onOpenChange={() => setViewingVersions(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Version History</DialogTitle>
+          </DialogHeader>
+          {viewingVersions && (
+            <VersionHistory
+              documentId={viewingVersions.id}
+              onRevert={() => {
+                queryClient.invalidateQueries(["documents"]);
+                setViewingVersions(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function DocumentCard({ document, queryClient }) {
+function DocumentCard({ document, queryClient, onEdit, onViewVersions }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -368,9 +423,13 @@ function DocumentCard({ document, queryClient }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onEdit}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onViewVersions}>
+                <Clock className="w-4 h-4 mr-2" />
+                Version History
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => regenerateSummaryMutation.mutate()}
