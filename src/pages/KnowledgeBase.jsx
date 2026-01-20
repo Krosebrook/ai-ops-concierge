@@ -633,7 +633,9 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
         status: "active",
         version: 1,
         owner_id: user?.id,
-        owner_name: user?.full_name
+        owner_name: user?.full_name,
+        is_external: isExternal,
+        external_url: isExternal ? externalUrl : undefined
       });
       
       // Generate AI summary in background
@@ -651,6 +653,8 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
       setTitle("");
       setContent("");
       setTags([]);
+      setIsExternal(false);
+      setExternalUrl("");
     } catch (error) {
       toast.error("Failed to upload document");
     } finally {
@@ -658,13 +662,41 @@ function UploadDialog({ open, onOpenChange, user, queryClient }) {
     }
   };
 
+  const [isExternal, setIsExternal] = useState(false);
+  const [externalUrl, setExternalUrl] = useState("");
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Upload Document</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <input
+              type="checkbox"
+              id="is_external"
+              checked={isExternal}
+              onChange={(e) => setIsExternal(e.target.checked)}
+              className="rounded"
+            />
+            <label htmlFor="is_external" className="text-sm text-blue-800 cursor-pointer flex items-center gap-1">
+              <Globe className="w-4 h-4" />
+              This is external/public documentation
+            </label>
+          </div>
+
+          {isExternal && (
+            <div>
+              <Label>External URL (optional)</Label>
+              <Input
+                value={externalUrl}
+                onChange={(e) => setExternalUrl(e.target.value)}
+                placeholder="https://docs.example.com/guide"
+              />
+            </div>
+          )}
+
           <div>
             <Label>Title</Label>
             <Input
