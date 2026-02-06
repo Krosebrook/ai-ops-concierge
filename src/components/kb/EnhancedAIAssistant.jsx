@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import SuggestionsPanel from "./SuggestionsPanel";
 
 export default function EnhancedAIAssistant({ user }) {
   const [messages, setMessages] = useState([]);
@@ -213,8 +214,32 @@ Return JSON array of suggestions.`;
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDocumentClick = async (doc) => {
+    // Track document view
+    await base44.entities.DocumentView.create({
+      document_id: doc.id,
+      document_title: doc.title,
+      user_id: user?.id,
+      user_email: user?.email,
+      source: "suggestion"
+    });
+
+    // Update view count
+    await base44.entities.Document.update(doc.id, {
+      view_count: (doc.view_count || 0) + 1
+    });
+
+    // Auto-fill a question about the document
+    setInput(`Tell me about "${doc.title}"`);
+    toast.success(`Document selected: ${doc.title}`);
+  };
+
+  const handleQuestionClick = (question) => {
+    setInput(question);
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Conversation History Sidebar */}
       <Card className="lg:col-span-1 p-4 h-[600px] overflow-y-auto">
         <div className="space-y-3">
@@ -255,7 +280,7 @@ Return JSON array of suggestions.`;
       </Card>
 
       {/* Main Chat */}
-      <Card className="lg:col-span-3 flex flex-col h-[600px] bg-gradient-to-br from-slate-50 to-white border-violet-200">
+      <Card className="lg:col-span-2 flex flex-col h-[600px] bg-gradient-to-br from-slate-50 to-white border-violet-200">
         {/* Header */}
         <div className="px-4 py-3 border-b border-violet-200 bg-gradient-to-r from-violet-50 to-purple-50">
           <div className="flex items-center justify-between">
@@ -454,6 +479,15 @@ Return JSON array of suggestions.`;
           </div>
         </div>
       </Card>
+
+      {/* Suggestions Panel */}
+      <div className="lg:col-span-2 h-[600px]">
+        <SuggestionsPanel 
+          conversationContext={messages}
+          onDocumentClick={handleDocumentClick}
+          onQuestionClick={handleQuestionClick}
+        />
+      </div>
     </div>
   );
 }
