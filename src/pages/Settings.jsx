@@ -39,12 +39,14 @@ import {
   Loader2,
   Plus,
   Trash2,
-  Edit2
+  Edit2,
+  AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import ExternalSourcesManager from "../components/kb/ExternalSourcesManager";
+import ContentGapDetector from "../components/kb/ContentGapDetector";
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -109,6 +111,10 @@ export default function Settings() {
           <TabsTrigger value="external" className="gap-2">
             <Globe className="w-4 h-4" />
             External Sources
+          </TabsTrigger>
+          <TabsTrigger value="gaps" className="gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Content Gaps
           </TabsTrigger>
         </TabsList>
 
@@ -442,6 +448,11 @@ export default function Settings() {
         {/* External Sources */}
         <TabsContent value="external">
           <ExternalSourcesManager />
+        </TabsContent>
+
+        {/* Content Gaps */}
+        <TabsContent value="gaps">
+          <ContentGapDetector />
         </TabsContent>
       </Tabs>
     </div>

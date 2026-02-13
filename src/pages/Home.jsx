@@ -210,6 +210,45 @@ Respond in JSON format:
       
       setCurrentEventId(eventRecord.id);
       
+      // Auto-detect content gap for low confidence or escalated queries
+      if (result.confidence === 'low' || result.escalation) {
+        try {
+          // Check if similar gap exists
+          const existingGaps = await base44.entities.ContentGap.filter({ 
+            status: 'identified' 
+          });
+          
+          const similarGap = existingGaps.find(g => 
+            question.toLowerCase().includes(g.topic.toLowerCase()) ||
+            g.topic.toLowerCase().includes(question.toLowerCase())
+          );
+          
+          if (!similarGap) {
+            // Create new gap suggestion (will be refined by batch detection)
+            await base44.entities.ContentGap.create({
+              topic: question.slice(0, 100),
+              description: `Low confidence answer detected. Consider creating content to address this query.`,
+              suggested_tags: result.citations?.map(c => c.title.split(' ')[0]) || [],
+              frequency: 1,
+              query_examples: [question],
+              confidence_scores: [result.confidence],
+              priority: result.escalation ? 'high' : 'medium',
+              status: 'identified',
+              suggested_content_type: 'document'
+            });
+          } else {
+            // Increment frequency
+            await base44.entities.ContentGap.update(similarGap.id, {
+              frequency: (similarGap.frequency || 1) + 1,
+              query_examples: [...(similarGap.query_examples || []), question].slice(0, 10),
+              priority: (similarGap.frequency + 1) >= 5 ? 'high' : 'medium'
+            });
+          }
+        } catch (error) {
+          console.error('Failed to log content gap:', error);
+        }
+      }
+      
       // Auto-create task if escalation recommended
       if (result.escalation?.target) {
         try {
