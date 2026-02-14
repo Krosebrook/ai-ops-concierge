@@ -339,9 +339,6 @@ export default function KnowledgeBase() {
         )}
       </Tabs>
 
-        </div>
-      </div>
-
       {/* Upload Dialog */}
       <UploadDialog 
         open={showUploadDialog} 
