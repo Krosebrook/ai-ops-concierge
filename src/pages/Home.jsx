@@ -56,21 +56,6 @@ export default function Home() {
   const queryClient = useQueryClient();
   const { user, hasPermission } = usePermissions();
 
-  // Check if user has permission to use Ask Mode
-  if (!hasPermission(PERMISSIONS.ASK_MODE)) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-red-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-600">
-          You don't have permission to use Ask Mode. Contact your administrator to request access.
-        </p>
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (!user) return;
     
