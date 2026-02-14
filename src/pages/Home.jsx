@@ -55,7 +55,26 @@ export default function Home() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me().then(async (currentUser) => {
+      setUser(currentUser);
+      
+      // Track page view activity
+      if (currentUser) {
+        try {
+          await base44.entities.UserActivity.create({
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            activity_type: 'kb_search',
+            activity_context: {
+              query_text: 'Visited Ask page'
+            },
+            session_id: `session_${Date.now()}`
+          });
+        } catch (error) {
+          console.error('Activity tracking failed:', error);
+        }
+      }
+    }).catch(() => setUser(null));
   }, []);
 
   const { data: documents = [] } = useQuery({
