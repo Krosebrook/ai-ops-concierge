@@ -75,8 +75,6 @@ export default function KnowledgeBase() {
   const [showQADialog, setShowQADialog] = useState(false);
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [user, setUser] = useState(null);
-  const [userPermissions, setUserPermissions] = useState([]);
   const [editingDocument, setEditingDocument] = useState(null);
   const [viewingVersions, setViewingVersions] = useState(null);
 
