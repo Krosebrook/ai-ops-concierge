@@ -14,7 +14,8 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
-  Bot
+  Bot,
+  Command
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -27,6 +28,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ProactiveSidebar from "./components/assistant/ProactiveSidebar";
 import OnboardingFlow from "./components/assistant/OnboardingFlow";
+import CommandPalette from "./components/shell/CommandPalette";
+import KeyboardShortcuts from "./components/shell/KeyboardShortcuts";
 
 const navigation = [
   { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence" },
@@ -44,10 +47,31 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
+
+    // Keyboard shortcuts
+    const handleKeyDown = (e) => {
+      // Command Palette: Cmd/Ctrl + K
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+      // Help: ?
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const target = e.target;
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const getInitials = (name) => {
@@ -56,7 +80,19 @@ export default function Layout({ children, currentPageName }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+    <div className="min-h-screen bg-gray-50">
+      {/* Command Palette */}
+      <CommandPalette 
+        open={commandPaletteOpen} 
+        onClose={() => setCommandPaletteOpen(false)} 
+      />
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts 
+        open={shortcutsOpen} 
+        onClose={() => setShortcutsOpen(false)} 
+      />
+
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
