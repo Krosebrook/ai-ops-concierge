@@ -31,20 +31,24 @@ import OnboardingFlow from "./components/assistant/OnboardingFlow";
 import CommandPalette from "./components/shell/CommandPalette";
 import KeyboardShortcuts from "./components/shell/KeyboardShortcuts";
 
+import { PERMISSIONS } from "./utils/permissions";
+import { hasPermission as checkPermission } from "./utils/permissions";
+
 const navigation = [
-  { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence" },
-  { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts" },
-  { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A" },
+  { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence", permission: PERMISSIONS.ASK_MODE },
+  { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts", permission: PERMISSIONS.DRAFT_MODE },
+  { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A", permission: PERMISSIONS.VIEW_KNOWLEDGE_BASE },
   { name: "Tasks", href: "Tasks", icon: ClipboardList, description: "Manage actionable tasks" },
-  { name: "Analytics", href: "Analytics", icon: Sparkles, description: "Usage insights & gaps" },
-  { name: "Automation", href: "WorkflowAutomation", icon: Sparkles, description: "Define automation rules" },
-  { name: "Audit Log", href: "AuditLog", icon: ClipboardList, description: "Review AI interactions" },
-  { name: "Client Portal", href: "ClientPortal", icon: Sparkles, description: "External client access", external: true },
-  { name: "Settings", href: "Settings", icon: Settings, description: "Configure roles & sources" },
+  { name: "Analytics", href: "Analytics", icon: Sparkles, description: "Usage insights & gaps", permission: PERMISSIONS.VIEW_ANALYTICS },
+  { name: "Automation", href: "WorkflowAutomation", icon: Sparkles, description: "Define automation rules", permission: PERMISSIONS.MANAGE_AUTOMATION },
+  { name: "Audit Log", href: "ActivityLog", icon: ClipboardList, description: "Review AI interactions", permission: PERMISSIONS.VIEW_AUDIT_LOG },
+  { name: "Client Portal", href: "ClientPortal", icon: Sparkles, description: "External client access", permission: PERMISSIONS.CLIENT_PORTAL_ACCESS, external: true },
+  { name: "Settings", href: "Settings", icon: Settings, description: "Configure roles & sources", permission: PERMISSIONS.MANAGE_SETTINGS },
 ];
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
+  const [customRoles, setCustomRoles] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -52,7 +56,18 @@ export default function Layout({ children, currentPageName }) {
   const location = useLocation();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => setUser(null));
+    const loadUserAndPermissions = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+        
+        const roles = await base44.entities.CustomRole.list();
+        setCustomRoles(roles);
+      } catch (error) {
+        setUser(null);
+      }
+    };
+    loadUserAndPermissions();
 
     // Keyboard shortcuts
     const handleKeyDown = (e) => {
@@ -128,9 +143,11 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-            {navigation.map((item) => {
-            const isActive = currentPageName === item.href;
-            return (
+            {navigation
+              .filter(item => !item.permission || checkPermission(user, customRoles, item.permission))
+              .map((item) => {
+              const isActive = currentPageName === item.href;
+              return (
               <Link
                 key={item.name}
                 to={createPageUrl(item.href)}

@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
+import { usePermissions } from "@/components/common/PermissionGuard";
+import { PERMISSIONS } from "@/utils/permissions";
 import { 
   Select, 
   SelectContent, 
@@ -47,35 +49,48 @@ export default function Home() {
   const [loadingStage, setLoadingStage] = useState("");
   const [confidencePreview, setConfidencePreview] = useState(null);
   const [showFullAnswer, setShowFullAnswer] = useState(false);
-  const [user, setUser] = useState(null);
   const [currentEventId, setCurrentEventId] = useState(null);
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const textareaRef = useRef(null);
   
   const queryClient = useQueryClient();
+  const { user, hasPermission } = usePermissions();
+
+  // Check if user has permission to use Ask Mode
+  if (!hasPermission(PERMISSIONS.ASK_MODE)) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-red-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-600">
+          You don't have permission to use Ask Mode. Contact your administrator to request access.
+        </p>
+      </div>
+    );
+  }
 
   useEffect(() => {
-    base44.auth.me().then(async (currentUser) => {
-      setUser(currentUser);
-      
-      // Track page view activity
-      if (currentUser) {
-        try {
-          await base44.entities.UserActivity.create({
-            user_id: currentUser.id,
-            user_email: currentUser.email,
-            activity_type: 'kb_search',
-            activity_context: {
-              query_text: 'Visited Ask page'
-            },
-            session_id: `session_${Date.now()}`
-          });
-        } catch (error) {
-          console.error('Activity tracking failed:', error);
-        }
+    if (!user) return;
+    
+    const trackActivity = async () => {
+      try {
+        await base44.entities.UserActivity.create({
+          user_id: user.id,
+          user_email: user.email,
+          activity_type: 'kb_search',
+          activity_context: {
+            query_text: 'Visited Ask page'
+          },
+          session_id: `session_${Date.now()}`
+        });
+      } catch (error) {
+        console.error('Activity tracking failed:', error);
       }
-    }).catch(() => setUser(null));
-  }, []);
+    };
+    trackActivity();
+  }, [user]);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["documents", "active"],
