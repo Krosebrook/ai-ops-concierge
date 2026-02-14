@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/components/common/PermissionGuard";
-import { PERMISSIONS } from "@/utils/permissions";
+import { PERMISSIONS } from "@/components/common/permissions";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";

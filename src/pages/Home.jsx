@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { usePermissions } from "@/components/common/PermissionGuard";
-import { PERMISSIONS } from "@/utils/permissions";
+import { PERMISSIONS } from "@/components/common/permissions";
 import { 
   Select, 
   SelectContent, 

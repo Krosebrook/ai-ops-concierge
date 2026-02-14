@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { hasPermission } from "@/utils/permissions";
+import { hasPermission } from "./permissions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Lock } from "lucide-react";
 

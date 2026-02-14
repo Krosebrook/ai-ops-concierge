@@ -31,8 +31,8 @@ import OnboardingFlow from "./components/assistant/OnboardingFlow";
 import CommandPalette from "./components/shell/CommandPalette";
 import KeyboardShortcuts from "./components/shell/KeyboardShortcuts";
 
-import { PERMISSIONS } from "./utils/permissions";
-import { hasPermission as checkPermission } from "./utils/permissions";
+import { PERMISSIONS } from "./components/common/permissions";
+import { hasPermission as checkPermission } from "./components/common/permissions";
 
 const navigation = [
   { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence", permission: PERMISSIONS.ASK_MODE },

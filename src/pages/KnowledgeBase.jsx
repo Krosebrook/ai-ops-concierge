@@ -82,27 +82,9 @@ export default function KnowledgeBase() {
 
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(async (u) => {
-      setUser(u);
-      // Get user permissions from custom role
-      if (u.custom_role_id) {
-        const roles = await base44.entities.CustomRole.filter({ id: u.custom_role_id });
-        if (roles[0]) {
-          setUserPermissions(roles[0].permissions || []);
-        }
-      } else if (u.permissions) {
-        setUserPermissions(u.permissions);
-      } else if (u.role === 'admin') {
-        setUserPermissions(['*']); // Admin has all permissions
-      }
-    }).catch(() => {});
-  }, []);
-
-  const hasPermission = (permission) => {
-    if (user?.role === 'admin') return true;
-    return userPermissions.includes('*') || userPermissions.includes(permission);
-  };
+  const { user, hasPermission: checkPerm } = usePermissions();
+  
+  const hasPermission = (permission) => checkPerm(permission);
 
   const { data: documents = [], isLoading: docsLoading } = useQuery({
     queryKey: ["documents"],
