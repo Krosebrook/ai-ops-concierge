@@ -210,6 +210,23 @@ Respond in JSON format:
       
       setCurrentEventId(eventRecord.id);
       
+      // Track query activity
+      try {
+        await base44.entities.UserActivity.create({
+          user_id: user.id,
+          user_email: user.email,
+          activity_type: 'query',
+          activity_context: {
+            query_text: question,
+            confidence: result.confidence,
+            tags: result.citations?.map(c => c.title.split(' ')[0]) || []
+          },
+          session_id: `session_${Date.now()}`
+        });
+      } catch (error) {
+        console.error('Activity tracking failed:', error);
+      }
+      
       // Auto-detect content gap for low confidence or escalated queries
       if (result.confidence === 'low' || result.escalation) {
         try {

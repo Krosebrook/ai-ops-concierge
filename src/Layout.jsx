@@ -13,7 +13,8 @@ import {
   X,
   ChevronRight,
   Sparkles,
-  LogOut
+  LogOut,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import ProactiveSidebar from "./components/assistant/ProactiveSidebar";
+import OnboardingFlow from "./components/assistant/OnboardingFlow";
 
 const navigation = [
   { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence" },
@@ -40,6 +43,7 @@ const navigation = [
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -175,8 +179,28 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </aside>
 
+      {/* Proactive Assistant Sidebar */}
+      <ProactiveSidebar 
+        isOpen={assistantOpen} 
+        onClose={() => setAssistantOpen(false)} 
+      />
+
+      {/* Onboarding Flow */}
+      {user && <OnboardingFlow user={user} />}
+
       {/* Main content */}
       <div className="lg:pl-72">
+        {/* AI Assistant Toggle (Desktop) */}
+        <Button
+          onClick={() => setAssistantOpen(true)}
+          className="hidden lg:flex fixed bottom-6 right-6 z-40 shadow-lg gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+          size="lg"
+        >
+          <Bot className="w-5 h-5" />
+          AI Assistant
+          <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+        </Button>
+
         {/* Mobile header */}
         <header className="sticky top-0 z-30 lg:hidden bg-white/80 backdrop-blur-xl border-b border-slate-200/80">
           <div className="flex items-center justify-between px-4 py-3">
@@ -192,7 +216,15 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <span className="font-bold text-slate-900">AI Ops</span>
             </div>
-            <div className="w-9" /> {/* Spacer for centering */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setAssistantOpen(true)}
+              className="relative"
+            >
+              <Bot className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
+            </Button>
           </div>
         </header>
 
