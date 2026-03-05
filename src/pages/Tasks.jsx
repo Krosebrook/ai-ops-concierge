@@ -100,6 +100,8 @@ export default function Tasks() {
     cancelled: filteredTasks.filter(t => t.status === "cancelled")
   };
 
+  const automatedCount = tasks.filter(t => t.is_automated).length;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
       {/* Header */}
