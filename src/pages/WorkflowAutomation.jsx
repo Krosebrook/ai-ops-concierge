@@ -381,6 +381,13 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
             </Select>
           </div>
 
+          {/* Trigger description hint */}
+          {formData.trigger_type && (
+            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700">
+              {TRIGGER_TYPES.find(t => t.value === formData.trigger_type)?.description}
+            </div>
+          )}
+
           {/* Trigger Value */}
           {triggerValues.length > 0 && (
             <div>
