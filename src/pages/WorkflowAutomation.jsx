@@ -364,9 +364,7 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
             <label className="text-sm font-medium text-slate-700 mb-2 block">
               Trigger Type *
             </label>
-            <Select value={formData.trigger_type} onValueChange={(v) => 
-              setFormData({ ...formData, trigger_type: v, trigger_value: "" })
-            }>
+            <Select value={formData.trigger_type} onValueChange={handleTriggerTypeChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select trigger type" />
               </SelectTrigger>
