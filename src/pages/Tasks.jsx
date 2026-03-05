@@ -311,7 +311,13 @@ function TaskCard({ task, users, onSelect, queryClient }) {
               </span>
             )}
           </div>
-          {task.event_id && (
+          {task.is_automated && (
+            <Badge variant="outline" className="text-xs gap-1 text-purple-600 border-purple-200 bg-purple-50">
+              <Zap className="w-3 h-3" />
+              Auto
+            </Badge>
+          )}
+          {task.event_id && !task.is_automated && (
             <Badge variant="outline" className="text-xs gap-1">
               <AlertCircle className="w-3 h-3" />
               From AI
