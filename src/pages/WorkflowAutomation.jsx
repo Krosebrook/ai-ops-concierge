@@ -187,10 +187,10 @@ function RuleCard({ rule, onToggle, onEdit, onDelete }) {
           <p className="text-sm text-slate-600 mb-3">{rule.description}</p>
 
           {/* Rule Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-3 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-3 bg-slate-50 rounded-lg">
             <div>
               <p className="text-xs text-slate-500 mb-1">Trigger</p>
-              <p className="text-sm font-medium text-slate-700">{triggerConfig?.label}</p>
+              <p className="text-sm font-medium text-slate-700">{triggerConfig?.icon} {triggerConfig?.label}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500 mb-1">Trigger Value</p>
@@ -198,20 +198,27 @@ function RuleCard({ rule, onToggle, onEdit, onDelete }) {
             </div>
             <div>
               <p className="text-xs text-slate-500 mb-1">Assigned To</p>
-              <p className="text-sm font-medium text-slate-700">{rule.action_config?.assigned_team}</p>
+              <p className="text-sm font-medium text-slate-700">{rule.action_config?.assigned_team || "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 mb-1">Priority</p>
+              <p className="text-sm font-medium text-slate-700 capitalize">{rule.action_config?.task_priority}</p>
             </div>
           </div>
 
           {/* Action Config */}
           <div className="text-xs text-slate-600 space-y-1">
             <p>
-              <strong>Action:</strong> Create {rule.action_config?.task_priority} priority task
+              <strong>Task Title:</strong> {rule.action_config?.task_title_template}
             </p>
-            <p>
-              <strong>Title Template:</strong> {rule.action_config?.task_title_template}
-            </p>
-            <p className="text-slate-500 mt-2">
+            {rule.action_config?.task_description_template && (
+              <p className="text-slate-500 truncate">
+                <strong>Description:</strong> {rule.action_config.task_description_template}
+              </p>
+            )}
+            <p className="text-slate-400 mt-2">
               Executed {rule.execution_count || 0} times
+              {rule.last_executed_at && ` · Last: ${format(new Date(rule.last_executed_at), "MMM d, h:mma")}`}
             </p>
           </div>
         </div>
