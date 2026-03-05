@@ -39,7 +39,8 @@ import {
   Repeat2,
   Link as LinkIcon,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
