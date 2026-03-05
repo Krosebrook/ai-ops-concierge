@@ -371,7 +371,10 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
               <SelectContent>
                 {TRIGGER_TYPES.map((t) => (
                   <SelectItem key={t.value} value={t.value}>
-                    {t.label}
+                    <span className="flex items-center gap-2">
+                      <span>{t.icon}</span>
+                      <span>{t.label}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
