@@ -87,7 +87,10 @@ export default function Tasks() {
       task.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || task.status === filterStatus;
     const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
-    return matchesSearch && matchesStatus && matchesPriority;
+    const matchesSource = filterSource === "all" ||
+      (filterSource === "automated" && task.is_automated) ||
+      (filterSource === "manual" && !task.is_automated);
+    return matchesSearch && matchesStatus && matchesPriority && matchesSource;
   });
 
   const tasksByStatus = {
