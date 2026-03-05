@@ -456,7 +456,7 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
               Task Title Template
             </label>
             <Input
-              placeholder="e.g., Auto: {trigger_value}"
+              placeholder="e.g., Create content for: {topic}"
               value={formData.action_config.task_title_template}
               onChange={(e) => setFormData({
                 ...formData,
@@ -464,8 +464,26 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
               })}
             />
             <p className="text-xs text-slate-500 mt-1">
-              Use {"{trigger_value}"} as placeholder for the trigger value
+              Variables: <code className="bg-slate-100 px-1 rounded">{"{topic}"}</code>{" "}
+              <code className="bg-slate-100 px-1 rounded">{"{query}"}</code>{" "}
+              <code className="bg-slate-100 px-1 rounded">{"{trigger_value}"}</code>{" "}
+              <code className="bg-slate-100 px-1 rounded">{"{frequency}"}</code>
             </p>
+          </div>
+
+          {/* Description Template */}
+          <div>
+            <label className="text-sm font-medium text-slate-700 mb-2 block">
+              Task Description Template
+            </label>
+            <Input
+              placeholder="e.g., Please review and address: {topic}"
+              value={formData.action_config.task_description_template}
+              onChange={(e) => setFormData({
+                ...formData,
+                action_config: { ...formData.action_config, task_description_template: e.target.value }
+              })}
+            />
           </div>
         </div>
 
