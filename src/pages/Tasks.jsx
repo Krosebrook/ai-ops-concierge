@@ -115,8 +115,14 @@ export default function Tasks() {
             Task Management
           </h1>
           <p className="mt-2 text-slate-600">
-            Track and manage tasks created from AI insights and escalations.
+            Track and manage tasks created from AI insights and workflow automations.
           </p>
+          {automatedCount > 0 && (
+            <div className="mt-2 inline-flex items-center gap-1.5 text-xs text-purple-700 bg-purple-50 border border-purple-100 rounded-full px-2.5 py-1">
+              <Zap className="w-3 h-3" />
+              {automatedCount} automated task{automatedCount !== 1 ? 's' : ''} from workflow rules
+            </div>
+          )}
         </div>
         {hasPermission(PERMISSIONS.CREATE_TASKS) && (
           <Button
