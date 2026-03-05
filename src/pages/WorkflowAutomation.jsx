@@ -266,10 +266,27 @@ function CreateRuleDialog({ open, onOpenChange, user, queryClient }) {
     action_config: {
       task_priority: "high",
       assigned_team: "",
-      task_title_template: "Auto: {trigger_value}"
+      task_title_template: "Auto: {trigger_value}",
+      task_description_template: ""
     }
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Auto-fill defaults when trigger type changes
+  const handleTriggerTypeChange = (v) => {
+    const defaults = DEFAULT_TEMPLATES[v] || {};
+    setFormData(prev => ({
+      ...prev,
+      trigger_type: v,
+      trigger_value: "",
+      action_config: {
+        ...prev.action_config,
+        task_priority: defaults.priority || "medium",
+        assigned_team: defaults.team || "",
+        task_title_template: defaults.title || "Auto: {trigger_value}",
+        task_description_template: defaults.description || "",
+      }
+    }));
+  };
 
   const createRuleMutation = useMutation({
     mutationFn: (ruleData) => base44.entities.WorkflowRule.create(ruleData),
