@@ -164,6 +164,21 @@ export default function Tasks() {
                 <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterSource} onValueChange={setFilterSource}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                <SelectItem value="manual">Manual</SelectItem>
+                <SelectItem value="automated">
+                  <span className="flex items-center gap-1.5">
+                    <Zap className="w-3 h-3 text-purple-500" />
+                    Automated
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           {filteredTasks.length !== tasks.length && (
