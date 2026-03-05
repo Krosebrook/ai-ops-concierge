@@ -34,15 +34,44 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 
 const TRIGGER_TYPES = [
-  { value: "ai_event_flag", label: "AI Event Flag", description: "When AI event has specific flag" },
-  { value: "support_request_category", label: "Support Category", description: "When support request is created" },
-  { value: "event_confidence", label: "Low Confidence", description: "When AI confidence is low" }
+  { value: "content_gap_identified", label: "Content Gap Identified", description: "When a new content gap is detected (assigns to content creator)", icon: "📄" },
+  { value: "event_confidence", label: "Low AI Confidence", description: "When AI confidence is low (assigns to knowledge engineer)", icon: "🧠" },
+  { value: "ai_event_flag", label: "AI Event Flag", description: "When an AI event has a specific policy flag", icon: "🚩" },
+  { value: "support_request_category", label: "Support Request Category", description: "When a support request matches a category", icon: "🎫" },
 ];
 
 const TRIGGER_VALUES = {
+  content_gap_identified: ["any", "high", "medium", "low"],
   ai_event_flag: ["potential_customer_interest", "billing_issue", "technical_problem", "urgent"],
   support_request_category: ["technical", "billing", "account", "feature_request", "bug"],
-  event_confidence: ["low"]
+  event_confidence: ["low"],
+};
+
+const DEFAULT_TEMPLATES = {
+  content_gap_identified: {
+    title: "Create content for: {topic}",
+    description: "Content gap detected for topic: \"{topic}\". Frequency: {frequency} occurrence(s). Please create appropriate documentation or Q&A to address this knowledge gap.",
+    team: "Content Team",
+    priority: "medium",
+  },
+  event_confidence: {
+    title: "Review low-confidence query: {query}",
+    description: "A user query received a low confidence AI response. Please review and update the knowledge base to improve coverage for: \"{query}\".",
+    team: "Knowledge Engineering",
+    priority: "high",
+  },
+  ai_event_flag: {
+    title: "Auto: {trigger_value}",
+    description: "An AI event was flagged with \"{trigger_value}\". Review the associated AI interaction and take appropriate action.",
+    team: "",
+    priority: "high",
+  },
+  support_request_category: {
+    title: "Auto: {trigger_value} support request",
+    description: "A new support request in category \"{trigger_value}\" requires attention.",
+    team: "Support",
+    priority: "medium",
+  },
 };
 
 export default function WorkflowAutomation() {
