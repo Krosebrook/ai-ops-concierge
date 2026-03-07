@@ -35,6 +35,7 @@ import { PERMISSIONS } from "./components/common/permissions";
 import { hasPermission as checkPermission } from "./components/common/permissions";
 
 const navigation = [
+  { name: "Dashboard", href: "Dashboard", icon: BarChart3, description: "Your activity & KPIs" },
   { name: "Ask", href: "Home", icon: MessageSquareText, description: "Get answers with evidence", permission: PERMISSIONS.ASK_MODE },
   { name: "Drafts", href: "Drafts", icon: FileEdit, description: "Create polished artifacts", permission: PERMISSIONS.DRAFT_MODE },
   { name: "Knowledge Base", href: "KnowledgeBase", icon: Library, description: "Manage documents & Q&A", permission: PERMISSIONS.VIEW_KNOWLEDGE_BASE },
