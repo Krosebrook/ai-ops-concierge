@@ -15,7 +15,8 @@ import {
   Sparkles,
   LogOut,
   Bot,
-  Command
+  Command,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
