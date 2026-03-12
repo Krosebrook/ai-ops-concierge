@@ -45,6 +45,9 @@ import {
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import AIFieldWrapper from "@/components/ai/AIFieldWrapper";
+import AIInlineAssist from "@/components/ai/AIInlineAssist";
+import { Textarea } from "@/components/ui/textarea";
 
 const STATUS_CONFIG = {
   open: { icon: Circle, color: "text-slate-400", bg: "bg-slate-100", label: "Open" },
