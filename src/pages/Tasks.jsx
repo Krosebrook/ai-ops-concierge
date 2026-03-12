@@ -395,6 +395,13 @@ function CreateTaskDialog({ open, onOpenChange, user, users, queryClient }) {
     }
   };
 
+  const aiContext = { 
+    description: formData.description, 
+    assigned_team: formData.assigned_team, 
+    priority: formData.priority 
+  };
+  const aiDescContext = { title: formData.title, priority: formData.priority };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -406,21 +413,40 @@ function CreateTaskDialog({ open, onOpenChange, user, users, queryClient }) {
             <label className="text-sm font-medium text-slate-700 mb-2 block">
               Title *
             </label>
-            <Input
-              placeholder="e.g., Review enterprise onboarding process"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            />
+            <AIFieldWrapper
+              promptType="task_title"
+              context={aiContext}
+              onAccept={(val) => setFormData(f => ({ ...f, title: val }))}
+            >
+              {({ onKeyDown }) => (
+                <Input
+                  placeholder="e.g., Review enterprise onboarding process"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onKeyDown={onKeyDown}
+                />
+              )}
+            </AIFieldWrapper>
           </div>
           <div>
             <label className="text-sm font-medium text-slate-700 mb-2 block">
               Description
             </label>
-            <Input
-              placeholder="Provide task details..."
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="Provide task details..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="min-h-[80px] pr-2 pb-10"
+              />
+              <AIInlineAssist
+                promptType="task_description"
+                context={aiDescContext}
+                onAccept={(val) => setFormData(f => ({ ...f, description: val }))}
+                className="absolute bottom-2 right-2"
+                placeholder="AI suggest"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
