@@ -86,7 +86,7 @@ export default function Tasks() {
     queryFn: () => base44.entities.User.list(),
   });
 
-  const filteredTasks = tasks.filter((task) => {
+  const baseFilteredTasks = tasks.filter((task) => {
     const matchesSearch = !searchQuery || 
       task.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -97,6 +97,12 @@ export default function Tasks() {
       (filterSource === "manual" && !task.is_automated);
     return matchesSearch && matchesStatus && matchesPriority && matchesSource;
   });
+
+  // When smart sort is active, use the AI-ranked order (filtered to current filter set)
+  const filteredTaskIds = new Set(baseFilteredTasks.map(t => t.id));
+  const filteredTasks = smartSortedTasks
+    ? smartSortedTasks.filter(t => filteredTaskIds.has(t.id))
+    : baseFilteredTasks;
 
   const tasksByStatus = {
     open: filteredTasks.filter(t => t.status === "open"),
