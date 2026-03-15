@@ -186,7 +186,7 @@ export default function Tasks() {
                 <SelectItem value="urgent">Urgent</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterSource} onValueChange={setFilterSource}>
+            <Select value={filterSource} onValueChange={(v) => { setFilterSource(v); resetSmartSort(); }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
