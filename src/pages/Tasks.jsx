@@ -48,6 +48,7 @@ import { toast } from "sonner";
 import AIFieldWrapper from "@/components/ai/AIFieldWrapper";
 import AIInlineAssist from "@/components/ai/AIInlineAssist";
 import { Textarea } from "@/components/ui/textarea";
+import SmartSortButton from "@/components/tasks/SmartSortButton";
 
 const STATUS_CONFIG = {
   open: { icon: Circle, color: "text-slate-400", bg: "bg-slate-100", label: "Open" },
