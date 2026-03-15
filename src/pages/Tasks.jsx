@@ -200,12 +200,20 @@ export default function Tasks() {
             </Select>
           </div>
           
-          {filteredTasks.length !== tasks.length && (
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <Filter className="w-3 h-3" />
-              <span>Showing {filteredTasks.length} of {tasks.length} tasks</span>
-            </div>
-          )}
+          <div className="flex items-center justify-between">
+            {filteredTasks.length !== tasks.length ? (
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <Filter className="w-3 h-3" />
+                <span>Showing {filteredTasks.length} of {tasks.length} tasks</span>
+              </div>
+            ) : <div />}
+            <SmartSortButton
+              tasks={baseFilteredTasks}
+              onSorted={setSmartSortedTasks}
+              isSmartSorted={!!smartSortedTasks}
+              onReset={() => setSmartSortedTasks(null)}
+            />
+          </div>
         </div>
       </Card>
 
