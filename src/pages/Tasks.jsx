@@ -69,6 +69,9 @@ export default function Tasks() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterSource, setFilterSource] = useState("all");
+
+  // Helper to reset smart sort whenever filters change
+  const resetSmartSort = () => setSmartSortedTasks(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [smartSortedTasks, setSmartSortedTasks] = useState(null);
