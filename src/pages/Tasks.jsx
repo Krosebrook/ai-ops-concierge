@@ -71,6 +71,7 @@ export default function Tasks() {
   const [filterSource, setFilterSource] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [smartSortedTasks, setSmartSortedTasks] = useState(null);
 
   const queryClient = useQueryClient();
   const { user, hasPermission } = usePermissions();
