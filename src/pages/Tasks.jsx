@@ -174,7 +174,7 @@ export default function Tasks() {
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <Select value={filterPriority} onValueChange={(v) => { setFilterPriority(v); resetSmartSort(); }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
